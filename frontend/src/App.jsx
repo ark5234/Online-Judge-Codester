@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import CodeRunner from './pages/CodeRunner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeProvider';
@@ -23,14 +24,12 @@ function AppRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/code-runner" element={<CodeRunner />} />
           {/* Optional: Fallback Route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
