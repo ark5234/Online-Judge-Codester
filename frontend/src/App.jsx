@@ -5,20 +5,21 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CodeRunner from './pages/CodeRunner';
+import Problems from './pages/Problems';
+import Status from './pages/Status';
+import Ranks from './pages/Ranks';
+import Discuss from './pages/Discuss';
+import Contests from './pages/Contests';
+import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeProvider';
 import Navbar from './components/Navbar';
 
 function AppRoutes() {
-  const { user } = useAuth();
-
   return (
     <>
-      <Navbar>
-        {user && <span className="mr-4 text-sm text-gray-600 dark:text-gray-300">Hi, {user.name || user.email}</span>}
-      </Navbar>
-
+      <Navbar />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -30,6 +31,16 @@ function AppRoutes() {
             </ProtectedRoute>
           } />
           <Route path="/code-runner" element={<CodeRunner />} />
+          <Route path="/problems" element={<Problems />} />
+          <Route path="/status" element={<Status />} />
+          <Route path="/ranks" element={<Ranks />} />
+          <Route path="/discuss" element={<Discuss />} />
+          <Route path="/contests" element={<Contests />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
           {/* Optional: Fallback Route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
