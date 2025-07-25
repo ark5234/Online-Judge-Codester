@@ -11,7 +11,7 @@ import Ranks from './pages/Ranks';
 import Discuss from './pages/Discuss';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeProvider';
 import Navbar from './components/Navbar';
@@ -20,7 +20,7 @@ function AppRoutes() {
   return (
     <>
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pt-28">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
