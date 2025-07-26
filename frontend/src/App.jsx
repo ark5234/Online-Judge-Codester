@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CodeRunner from './pages/CodeRunner';
 import Problems from './pages/Problems';
+import ProblemDetail from './pages/ProblemDetail';
 import Status from './pages/Status';
 import Ranks from './pages/Ranks';
 import Discuss from './pages/Discuss';
@@ -15,6 +16,8 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeProvider';
 import Navbar from './components/Navbar';
+import ThemeToggle from './components/ThemeToggle';
+import Footer from './components/Footer';
 
 function AppRoutes() {
   return (
@@ -32,6 +35,7 @@ function AppRoutes() {
           } />
           <Route path="/code-runner" element={<CodeRunner />} />
           <Route path="/problems" element={<Problems />} />
+          <Route path="/problems/:id" element={<ProblemDetail />} />
           <Route path="/status" element={<Status />} />
           <Route path="/ranks" element={<Ranks />} />
           <Route path="/discuss" element={<Discuss />} />
@@ -45,6 +49,10 @@ function AppRoutes() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
+      {/* Floating Theme Toggle */}
+      <ThemeToggle />
+      {/* Footer */}
+      <Footer />
     </>
   );
 }
