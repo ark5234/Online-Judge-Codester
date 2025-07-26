@@ -8,10 +8,12 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    // Use production URL for Vercel deployment
+    const baseUrl = window.location.origin;
     await account.createOAuth2Session(
       "google",
-      "http://localhost:5173/dashboard", // success redirect
-      "http://localhost:5173/login"      // failure redirect
+      `${baseUrl}/dashboard`, // success redirect
+      `${baseUrl}/login`      // failure redirect
     );
     setLoading(false);
   };
