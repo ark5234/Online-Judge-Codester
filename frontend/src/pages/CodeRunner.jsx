@@ -24,7 +24,7 @@ Error Handling: The code lacks error handling. It assumes the user will input va
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 py-10 px-4">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8">
         {/* Code Editor */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 card-hover flex flex-col h-[500px]">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 card-hover flex flex-col h-[500px] mb-8">
           <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">Code Editor</div>
           <textarea
             className="flex-1 w-full bg-gray-100 dark:bg-gray-800 rounded-lg p-4 font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -33,11 +33,10 @@ Error Handling: The code lacks error handling. It assumes the user will input va
             spellCheck={false}
           />
         </div>
-
         {/* Right Panel */}
         <div className="flex flex-col gap-6">
           {/* Input */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-4 card-hover">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 card-hover mb-8">
             <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">Input</div>
             <textarea
               className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg p-2 font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none"
@@ -48,12 +47,12 @@ Error Handling: The code lacks error handling. It assumes the user will input va
             />
           </div>
           {/* Output */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-4 card-hover">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 card-hover mb-8">
             <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">Output</div>
             <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 font-mono text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{output}</pre>
           </div>
           {/* AI Review */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-4 card-hover">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 card-hover mb-8">
             <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">AI Review</div>
             <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 font-mono text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{review}</pre>
           </div>

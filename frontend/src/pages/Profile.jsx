@@ -13,7 +13,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 px-4">
-      <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 space-y-6 border border-gray-200 dark:border-gray-800 card-hover text-center">
+      <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 mb-8 space-y-6 text-center card-hover">
         <div className="flex flex-col items-center gap-4 mb-4">
           <div className="w-20 h-20 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-4xl mx-auto">
             {user.name ? user.name[0].toUpperCase() : user.email[0].toUpperCase()}
