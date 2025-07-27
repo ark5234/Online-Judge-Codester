@@ -1,18 +1,24 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const { authenticateJWT } = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+// Simple health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Backend is running!' });
+});
 
-app.use('/api/auth', require('./api/auth/routes'));
-app.use('/api/problems', require('./api/problems/routes'));
+// API routes
 app.use('/api/submissions', require('./api/submissions/routes'));
-app.use('/api/admin', authenticateJWT, require('./api/admin/routes'));
+app.use('/api/ai', require('./api/ai/routes'));
 
-app.listen(5000, () => console.log('Server running on port 5000')); 
+// Fallback route
+app.get('*', (req, res) => {
+  res.json({ message: 'Codester Backend API' });
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

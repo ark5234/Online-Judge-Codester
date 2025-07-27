@@ -15,7 +15,7 @@ const navLinks = [
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const mobileMenuRef = useRef(null);
@@ -87,7 +87,7 @@ export default function Navbar() {
               className="p-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
               aria-label="Toggle theme"
             >
-              {isDark ? (
+              {theme === 'dark' ? (
                 <FiSun className="w-5 h-5" />
               ) : (
                 <FiMoon className="w-5 h-5" />

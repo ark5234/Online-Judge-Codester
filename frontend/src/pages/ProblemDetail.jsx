@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { FiMessageCircle, FiSend, FiLoader } from 'react-icons/fi';
 
 // Sample problems data (in a real app, this would come from an API)
 const sampleProblems = [
@@ -29,50 +30,96 @@ const sampleProblems = [
   },
   { 
     id: 2, 
-    title: "Reverse Linked List", 
-    difficulty: "Medium",
-    description: "Given the head of a singly linked list, reverse the list, and return the reversed list.",
+    title: "Valid Parentheses", 
+    difficulty: "Easy",
+    description: "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid. An input string is valid if: Open brackets must be closed by the same type of brackets. Open brackets must be closed in the correct order.",
     constraints: [
-      "The number of nodes in the list is the range [0, 5000]",
-      "-5000 <= Node.val <= 5000"
+      "1 <= s.length <= 10^4",
+      "s consists of parentheses only '()[]{}'"
     ],
     examples: [
       {
-        input: "head = [1,2,3,4,5]",
-        output: "[5,4,3,2,1]",
-        explanation: "The original list is reversed to become [5,4,3,2,1]."
+        input: 's = "()"',
+        output: "true",
+        explanation: "The string contains valid parentheses."
       },
       {
-        input: "head = [1,2]",
-        output: "[2,1]",
-        explanation: "The original list is reversed to become [2,1]."
+        input: 's = "([)]"',
+        output: "false",
+        explanation: "The string contains invalid parentheses."
       }
     ]
   },
   { 
     id: 3, 
-    title: "Word Ladder", 
-    difficulty: "Hard",
-    description: "A transformation sequence from word beginWord to word endWord using a dictionary wordList is a sequence of words beginWord -> s1 -> s2 -> ... -> sk such that: Every adjacent pair of words differs by a single letter, and every si for 1 <= i <= k is in wordList. Given two words, beginWord and endWord, and a dictionary wordList, return the number of words in the shortest transformation sequence from beginWord to endWord, or 0 if no such sequence exists.",
+    title: "Merge Sorted Array", 
+    difficulty: "Medium",
+    description: "You are given two integer arrays nums1 and nums2, sorted in non-decreasing order, and two integers m and n, representing the number of elements in nums1 and nums2 respectively. Merge nums1 and nums2 into a single array sorted in non-decreasing order.",
     constraints: [
-      "1 <= beginWord.length <= 10",
-      "endWord.length == beginWord.length",
-      "1 <= wordList.length <= 5000",
-      "wordList[i].length == beginWord.length",
-      "beginWord, endWord, and wordList[i] consist of lowercase English letters",
-      "beginWord != endWord",
-      "All the words in wordList are unique"
+      "nums1.length == m + n",
+      "nums2.length == n",
+      "0 <= m, n <= 200",
+      "1 <= m + n <= 200",
+      "-10^9 <= nums1[i], nums2[j] <= 10^9"
     ],
     examples: [
       {
-        input: 'beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log","cog"]',
-        output: "5",
-        explanation: 'One shortest transformation sequence is "hit" -> "hot" -> "dot" -> "dog" -> "cog", which is 5 words long.'
-      },
+        input: "nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3",
+        output: "[1,2,2,3,5,6]",
+        explanation: "The arrays are merged and sorted."
+      }
+    ]
+  },
+  { 
+    id: 4, 
+    title: "Binary Tree Inorder Traversal", 
+    difficulty: "Medium",
+    description: "Given the root of a binary tree, return the inorder traversal of its nodes' values.",
+    constraints: [
+      "The number of nodes in the tree is in the range [0, 100]",
+      "-100 <= Node.val <= 100"
+    ],
+    examples: [
       {
-        input: 'beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log"]',
-        output: "0",
-        explanation: "The endWord 'cog' is not in wordList, therefore there is no valid transformation sequence."
+        input: "root = [1,null,2,3]",
+        output: "[1,3,2]",
+        explanation: "Inorder traversal visits nodes in left-root-right order."
+      }
+    ]
+  },
+  { 
+    id: 5, 
+    title: "Longest Palindromic Substring", 
+    difficulty: "Hard",
+    description: "Given a string s, return the longest palindromic substring in s.",
+    constraints: [
+      "1 <= s.length <= 1000",
+      "s consist of only digits and English letters"
+    ],
+    examples: [
+      {
+        input: 's = "babad"',
+        output: '"bab"',
+        explanation: '"aba" is also a valid answer.'
+      }
+    ]
+  },
+  { 
+    id: 6, 
+    title: "Regular Expression Matching", 
+    difficulty: "Hard",
+    description: "Given an input string s and a pattern p, implement regular expression matching with support for '.' and '*' where '.' matches any single character and '*' matches zero or more of the preceding element.",
+    constraints: [
+      "1 <= s.length <= 20",
+      "1 <= p.length <= 30",
+      "s contains only lowercase English letters",
+      "p contains only lowercase English letters, '.', and '*'"
+    ],
+    examples: [
+      {
+        input: 's = "aa", p = "a"',
+        output: "false",
+        explanation: "The pattern doesn't match the string."
       }
     ]
   },
@@ -102,6 +149,10 @@ export default function ProblemDetail() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [showAiSection, setShowAiSection] = useState(false);
 
   useEffect(() => {
     const foundProblem = sampleProblems.find(p => p.id === parseInt(id));
@@ -185,11 +236,67 @@ int main() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate submission
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:3001/api/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          problemId: problem.id,
+          language: language,
+          code: code,
+          userId: 'user123', // In a real app, get from auth context
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`Submission Result: ${result.status}\n${result.message || ''}`);
+      } else {
+        alert(`Error: ${result.message || 'Failed to submit solution'}`);
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Failed to connect to backend. Please try again.');
+    } finally {
       setIsSubmitting(false);
-      alert('Submission received! In a real app, this would be sent to the backend for evaluation.');
-    }, 2000);
+    }
+  };
+
+  const handleAiQuestion = async () => {
+    if (!aiQuestion.trim()) return;
+    
+    setIsAiLoading(true);
+    try {
+      const response = await fetch('http://localhost:3001/api/ai/review', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: aiQuestion,
+          problemTitle: problem.title,
+          problemDescription: problem.description,
+          userCode: code,
+          language: language,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAiResponse(result.response);
+      } else {
+        setAiResponse('Sorry, I encountered an error. Please try again.');
+      }
+    } catch (error) {
+      console.error('AI Review error:', error);
+      setAiResponse('Sorry, I cannot connect to the AI service right now. Please try again later.');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   if (!problem) {
@@ -295,48 +402,121 @@ int main() {
             </div>
           </div>
 
-          {/* Code Editor */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Code Editor</h2>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                  <option value="cpp">C++</option>
-                </select>
+          {/* Right Column - Code Editor and AI Review */}
+          <div className="space-y-6">
+            {/* Code Editor */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">Code Editor</h2>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <textarea
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full h-80 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Write your solution here..."
+                  spellCheck="false"
+                />
+                
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                  </button>
+                  <button
+                    onClick={() => setDefaultCode(language, problem)}
+                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
-            
-            <div className="p-6">
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full h-80 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Write your solution here..."
-                spellCheck="false"
-              />
-              
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Solution'}
-                </button>
-                <button
-                  onClick={() => setDefaultCode(language, problem)}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Reset
-                </button>
+
+            {/* AI Review Section - Below Code Editor */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                    <FiMessageCircle className="w-5 h-5 mr-2 text-blue-600" />
+                    AI Review Assistant
+                  </h2>
+                  <button
+                    onClick={() => setShowAiSection(!showAiSection)}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    {showAiSection ? 'Hide' : 'Show'}
+                  </button>
+                </div>
               </div>
+              
+              {showAiSection && (
+                <div className="px-6 py-4 space-y-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      💡 Ask me anything about this problem! I can help with:
+                    </p>
+                    <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
+                      <li>• Understanding the problem statement</li>
+                      <li>• Explaining the approach and algorithm</li>
+                      <li>• Reviewing your code and suggesting improvements</li>
+                      <li>• Providing hints and tips</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <textarea
+                      value={aiQuestion}
+                      onChange={(e) => setAiQuestion(e.target.value)}
+                      placeholder="Ask your question here... (e.g., 'Can you explain the optimal approach for this problem?')"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows="3"
+                    />
+                    <button
+                      onClick={handleAiQuestion}
+                      disabled={isAiLoading || !aiQuestion.trim()}
+                      className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isAiLoading ? (
+                        <>
+                          <FiLoader className="w-4 h-4 mr-2 animate-spin" />
+                          Thinking...
+                        </>
+                      ) : (
+                        <>
+                          <FiSend className="w-4 h-4 mr-2" />
+                          Ask AI
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {aiResponse && (
+                    <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">AI Response:</h4>
+                      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {aiResponse}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

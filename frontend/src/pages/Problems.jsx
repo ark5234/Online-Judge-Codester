@@ -160,7 +160,7 @@ export default function Problems() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
-                      <Link to={`/problem/${problem.id}`} className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 mb-2 block">
+                      <Link to={`/problems/${problem.id}`} className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 mb-2 block">
                         {problem.title}
                       </Link>
                       <span className="text-sm text-gray-600 dark:text-gray-400">{problem.category}</span>
