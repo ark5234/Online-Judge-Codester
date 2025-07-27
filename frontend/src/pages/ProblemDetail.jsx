@@ -80,10 +80,19 @@ const sampleProblems = [
 
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
-    case 'Easy': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-    case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-    case 'Hard': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    case 'Easy': return 'text-green-600 dark:text-green-400';
+    case 'Medium': return 'text-yellow-600 dark:text-yellow-400';
+    case 'Hard': return 'text-red-600 dark:text-red-400';
+    default: return 'text-gray-600 dark:text-gray-400';
+  }
+};
+
+const getDifficultyBgColor = (difficulty) => {
+  switch (difficulty) {
+    case 'Easy': return 'bg-green-100 dark:bg-green-900/30';
+    case 'Medium': return 'bg-yellow-100 dark:bg-yellow-900/30';
+    case 'Hard': return 'bg-red-100 dark:bg-red-900/30';
+    default: return 'bg-gray-100 dark:bg-gray-800';
   }
 };
 
@@ -185,134 +194,150 @@ int main() {
 
   if (!problem) {
     return (
-      <div className="container mx-auto max-w-6xl px-4 py-8">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Problem Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">The problem you're looking for doesn't exist.</p>
-          <Link 
-            to="/problems" 
-            className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            Back to Problems
-          </Link>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Problem Not Found</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">The problem you're looking for doesn't exist.</p>
+            <Link 
+              to="/problems" 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Problems
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
-      {/* Problem Header */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-8 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{problem.title}</h1>
-            <div className="flex items-center gap-4 mt-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(problem.difficulty)}`}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Problem Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{problem.title}</h1>
+              <span className={`px-2 py-1 text-xs font-medium rounded ${getDifficultyBgColor(problem.difficulty)} ${getDifficultyColor(problem.difficulty)}`}>
                 {problem.difficulty}
               </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Problem #{problem.id}</span>
             </div>
+            <Link 
+              to="/problems" 
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              ← Back to Problems
+            </Link>
           </div>
-          <Link 
-            to="/problems" 
-            className="cursor-pointer px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-          >
-            Back to Problems
-          </Link>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Problem Description */}
-        <div className="space-y-6">
-          {/* Description */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Description</h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{problem.description}</p>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Problem Description */}
+          <div className="space-y-6">
+            {/* Description */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Description</h2>
+              </div>
+              <div className="px-6 py-4">
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">{problem.description}</p>
+              </div>
+            </div>
 
-          {/* Constraints */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Constraints</h2>
-            <ul className="space-y-2">
-              {problem.constraints.map((constraint, index) => (
-                <li key={index} className="text-gray-700 dark:text-gray-300 flex items-start">
-                  <span className="text-blue-600 dark:text-blue-400 mr-2">•</span>
-                  <span className="font-mono text-sm">{constraint}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+            {/* Constraints */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Constraints</h2>
+              </div>
+              <div className="px-6 py-4">
+                <ul className="space-y-2">
+                  {problem.constraints.map((constraint, index) => (
+                    <li key={index} className="text-gray-700 dark:text-gray-300 text-sm flex items-start">
+                      <span className="text-gray-400 mr-2 mt-1">•</span>
+                      <span className="font-mono">{constraint}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
-          {/* Examples */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Examples</h2>
-            <div className="space-y-4">
-              {problem.examples.map((example, index) => (
-                <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Example {index + 1}:</h3>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">Input: </span>
-                      <span className="font-mono text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                        {example.input}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">Output: </span>
-                      <span className="font-mono text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                        {example.output}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">Explanation: </span>
-                      <span className="text-gray-600 dark:text-gray-400 text-sm">{example.explanation}</span>
+            {/* Examples */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Examples</h2>
+              </div>
+              <div className="px-6 py-4 space-y-4">
+                {problem.examples.map((example, index) => (
+                  <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-md p-4">
+                    <h3 className="font-medium text-gray-900 dark:text-white mb-3 text-sm">Example {index + 1}:</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">Input: </span>
+                        <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                          <code className="text-sm text-gray-900 dark:text-gray-100">{example.input}</code>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">Output: </span>
+                        <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                          <code className="text-sm text-gray-900 dark:text-gray-100">{example.output}</code>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">Explanation: </span>
+                        <p className="mt-1 text-gray-600 dark:text-gray-400 text-sm">{example.explanation}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Code Editor */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Code Editor</h2>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="cursor-pointer px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600"
-            >
-              <option value="javascript">JavaScript</option>
-              <option value="python">Python</option>
-              <option value="java">Java</option>
-              <option value="cpp">C++</option>
-            </select>
-          </div>
-          
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="w-full h-96 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Write your solution here..."
-          />
-          
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="cursor-pointer flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Solution'}
-            </button>
-            <button
-              onClick={() => setDefaultCode(language, problem)}
-              className="cursor-pointer px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              Reset
-            </button>
+          {/* Code Editor */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Code Editor</h2>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="javascript">JavaScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="w-full h-80 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Write your solution here..."
+                spellCheck="false"
+              />
+              
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                </button>
+                <button
+                  onClick={() => setDefaultCode(language, problem)}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

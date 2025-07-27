@@ -1,10 +1,10 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
-    "./src/**/*.{js,ts,jsx,tsx}", // all components/pages
-    "./public/index.html",         // optional: include your index.html
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./public/index.html",
   ],
-  darkMode: 'class', // enables `dark:` variants with class-based toggling
+  darkMode: 'class',
   theme: {
     container: {
       center: true,
@@ -13,8 +13,8 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#6366f1', // indigo-500
-          dark: '#4f46e5',    // darker indigo for hover
+          DEFAULT: '#6366f1',
+          dark: '#4f46e5',
         },
         background: {
           light: '#f9fafb',
@@ -60,18 +60,5 @@ module.exports = {
       },
     },
   },
-  variants: {
-    extend: {
-      opacity: ['disabled'],
-      backgroundColor: ['active'],
-      scale: ['group-hover'],
-    },
-  },
-  plugins: [
-    require('@tailwindcss/forms'),        // for better form styling
-    require('@tailwindcss/typography'),   // for prose/content styling
-    require('@tailwindcss/aspect-ratio'), // for image/video aspect ratios
-    require('tailwind-scrollbar'),        // optional: custom scrollbars
-    require('tailwindcss-animate'),       // animation utility classes
-  ],
+  plugins: [],
 }
