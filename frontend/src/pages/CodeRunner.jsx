@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
+
 
 export default function CodeRunner() {
   const [code, setCode] = useState(`#include <iostream>
@@ -21,45 +23,98 @@ Error Handling: The code lacks error handling. It assumes the user will input va
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 py-10 px-4">
-      <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8">
-        {/* Code Editor */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 card-hover flex flex-col h-[500px] mb-8">
-          <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">Code Editor</div>
-          <textarea
-            className="flex-1 w-full bg-gray-100 dark:bg-gray-800 rounded-lg p-4 font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={code}
-            onChange={e => setCode(e.target.value)}
-            spellCheck={false}
-          />
-        </div>
-        {/* Right Panel */}
-        <div className="flex flex-col gap-6">
-          {/* Input */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 card-hover mb-8">
-            <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">Input</div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 sm:p-8 text-center">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Code Runner
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
+              Write, run, and get AI-powered feedback on your code
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          {/* Code Editor */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 sm:p-8 flex flex-col h-[600px]"
+          >
+            <div className="font-semibold text-lg text-gray-700 dark:text-gray-200 mb-4">Code Editor</div>
             <textarea
-              className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg p-2 font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              rows={2}
+              className="flex-1 w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-4 font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={code}
+              onChange={e => setCode(e.target.value)}
               spellCheck={false}
             />
-          </div>
-          {/* Output */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 card-hover mb-8">
-            <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">Output</div>
-            <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 font-mono text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{output}</pre>
-          </div>
-          {/* AI Review */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 card-hover mb-8">
-            <div className="font-semibold text-lg mb-2 text-gray-700 dark:text-gray-200">AI Review</div>
-            <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 font-mono text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{review}</pre>
-          </div>
-          {/* Buttons */}
-          <div className="flex gap-4 mt-2">
-            <button className="btn-primary flex-1 bg-blue-600 text-white hover:bg-blue-700">Run</button>
-            <button className="btn-primary flex-1 bg-green-600 text-white hover:bg-green-700">AI Review</button>
+          </motion.div>
+
+          {/* Right Panel */}
+          <div className="space-y-6 sm:space-y-8">
+            {/* Input */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6"
+            >
+              <div className="font-semibold text-lg text-gray-700 dark:text-gray-200 mb-3">Input</div>
+              <textarea
+                className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                rows={3}
+                spellCheck={false}
+              />
+            </motion.div>
+
+            {/* Output */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6"
+            >
+              <div className="font-semibold text-lg text-gray-700 dark:text-gray-200 mb-3">Output</div>
+              <pre className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 font-mono text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap min-h-[80px]">{output}</pre>
+            </motion.div>
+
+            {/* AI Review */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6"
+            >
+              <div className="font-semibold text-lg text-gray-700 dark:text-gray-200 mb-3">AI Review</div>
+              <pre className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 font-mono text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap max-h-[120px] overflow-y-auto">{review}</pre>
+            </motion.div>
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+            >
+              <button className="flex-1 flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                Run Code
+              </button>
+              <button className="flex-1 flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                AI Review
+              </button>
+            </motion.div>
           </div>
         </div>
       </div>

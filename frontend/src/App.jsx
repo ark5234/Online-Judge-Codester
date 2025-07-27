@@ -16,14 +16,13 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeProvider';
 import Navbar from './components/Navbar';
-import ThemeToggle from './components/ThemeToggle';
 import Footer from './components/Footer';
 
 function AppRoutes() {
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 pt-28">
+      <main className="flex-1 pt-28 w-full">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -49,11 +48,8 @@ function AppRoutes() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {/* Floating Theme Toggle */}
-      <ThemeToggle />
-      {/* Footer */}
       <Footer />
-    </>
+    </div>
   );
 }
 
@@ -62,7 +58,7 @@ function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 dark:bg-gray-900">
       <h1 className="text-4xl font-bold text-red-500 dark:text-red-400 mb-4">404 - Page Not Found</h1>
-      <p className="text-gray-600 dark:text-gray-300 mb-6">Oops! The page you’re looking for doesn’t exist.</p>
+      <p className="text-gray-600 dark:text-gray-300 mb-6">Oops! The page you're looking for doesn't exist.</p>
       <a href="/" className="text-blue-600 dark:text-blue-400 underline">Back to Home</a>
     </div>
   );
