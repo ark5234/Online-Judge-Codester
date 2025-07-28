@@ -41,13 +41,33 @@ async function testProductionBackend() {
     console.log('✅ Problems API:', problems.data);
     console.log('');
 
+    // Test 6: AI Service
+    console.log('6️⃣ Testing AI Service...');
+    try {
+      const aiResponse = await axios.post(`${baseUrl}/api/ai/review`, {
+        question: 'How do I solve Two Sum?',
+        problemTitle: 'Two Sum',
+        code: 'console.log("test");',
+        language: 'javascript'
+      }, {
+        headers: {
+          'Authorization': 'Bearer mock-jwt-token-for-testing',
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('✅ AI Service:', 'Working - Response received');
+    } catch (error) {
+      console.log('❌ AI Service:', error.response?.data?.message || 'Not available');
+    }
+    console.log('');
+
     console.log('🎉 All tests passed! Production backend is working correctly.');
     console.log('');
     console.log('📊 Available Services:');
     console.log('   • MongoDB: Connected');
     console.log('   • Redis: Connected');
     console.log('   • Code Compiler: Running');
-    console.log('   • AI Service: Ready (needs GEMINI_API_KEY)');
+    console.log(`   • AI Service: ${health.data.services.ai}`);
     console.log('   • JWT Auth: Ready');
     console.log('   • Rate Limiting: Active');
     console.log('');
