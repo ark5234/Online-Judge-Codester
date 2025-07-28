@@ -2,13 +2,35 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 class AIService {
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.genAI = null;
+    this.model = null;
+    this.initialized = false;
+  }
+
+  // Initialize AI service lazily
+  initialize() {
+    if (this.initialized) return;
+    
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Please configure GEMINI_API_KEY to use AI features');
+    }
+    
+    try {
+      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      this.initialized = true;
+    } catch (error) {
+      console.error('Failed to initialize AI service:', error);
+      throw new Error('Failed to initialize AI service');
+    }
   }
 
   // Generate code review
   async generateCodeReview(code, language, problemTitle) {
     try {
+      this.initialize();
+      
       const prompt = `You are an expert programming mentor. Review this ${language} code for the problem "${problemTitle}":
 
 \`\`\`${language}
@@ -36,6 +58,8 @@ Format your response in markdown with clear sections.`;
   // Generate problem explanation
   async generateProblemExplanation(problemTitle, question) {
     try {
+      this.initialize();
+      
       const prompt = `You are an expert programming mentor helping with the problem "${problemTitle}".
 
 Student Question: "${question}"
@@ -61,6 +85,8 @@ Keep your response educational, encouraging, and focused on learning.`;
   // Generate hints for a problem
   async generateHints(problemTitle, currentHintLevel = 1) {
     try {
+      this.initialize();
+      
       const prompt = `You are providing hints for the programming problem "${problemTitle}".
 
 Current hint level: ${currentHintLevel}
@@ -85,6 +111,8 @@ Format as a single, clear hint.`;
   // Generate solution explanation
   async generateSolutionExplanation(problemTitle, solutionCode, language) {
     try {
+      this.initialize();
+      
       const prompt = `You are explaining a solution to the programming problem "${problemTitle}".
 
 Here's the solution code in ${language}:
@@ -114,6 +142,8 @@ Make the explanation educational and suitable for learning.`;
   // Generate practice problems
   async generatePracticeProblems(topic, difficulty = 'medium', count = 3) {
     try {
+      this.initialize();
+      
       const prompt = `You are creating practice programming problems for the topic "${topic}" at ${difficulty} difficulty level.
 
 Please generate ${count} practice problems. For each problem, provide:
@@ -138,6 +168,8 @@ Format as a JSON array with these fields.`;
   // Generate learning path
   async generateLearningPath(currentLevel, goals) {
     try {
+      this.initialize();
+      
       const prompt = `You are creating a personalized learning path for a programmer.
 
 Current Level: ${currentLevel}
@@ -171,7 +203,7 @@ Format as a structured learning plan.`;
   getStatus() {
     return {
       available: this.isAvailable(),
-      model: 'gemini-pro',
+      model: 'gemini-2.0-flash',
       features: [
         'code_review',
         'problem_explanation',
