@@ -2,129 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft } from 'react-icons/fi';
 
-// Sample problems data (in a real app, this would come from an API)
-const sampleProblems = [
-  { 
-    id: 1, 
-    title: "Two Sum", 
-    difficulty: "Easy",
-    description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice.",
-    constraints: [
-      "2 <= nums.length <= 10^4",
-      "-10^9 <= nums[i] <= 10^9",
-      "-10^9 <= target <= 10^9",
-      "Only one valid answer exists"
-    ],
-    examples: [
-      {
-        input: "nums = [2,7,11,15], target = 9",
-        output: "[0,1]",
-        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]."
-      },
-      {
-        input: "nums = [3,2,4], target = 6",
-        output: "[1,2]",
-        explanation: "Because nums[1] + nums[2] == 6, we return [1, 2]."
-      }
-    ]
-  },
-  { 
-    id: 2, 
-    title: "Valid Parentheses", 
-    difficulty: "Easy",
-    description: "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid. An input string is valid if: Open brackets must be closed by the same type of brackets. Open brackets must be closed in the correct order.",
-    constraints: [
-      "1 <= s.length <= 10^4",
-      "s consists of parentheses only '()[]{}'"
-    ],
-    examples: [
-      {
-        input: 's = "()"',
-        output: "true",
-        explanation: "The string contains valid parentheses."
-      },
-      {
-        input: 's = "([)]"',
-        output: "false",
-        explanation: "The string contains invalid parentheses."
-      }
-    ]
-  },
-  { 
-    id: 3, 
-    title: "Merge Sorted Array", 
-    difficulty: "Medium",
-    description: "You are given two integer arrays nums1 and nums2, sorted in non-decreasing order, and two integers m and n, representing the number of elements in nums1 and nums2 respectively. Merge nums1 and nums2 into a single array sorted in non-decreasing order.",
-    constraints: [
-      "nums1.length == m + n",
-      "nums2.length == n",
-      "0 <= m, n <= 200",
-      "1 <= m + n <= 200",
-      "-10^9 <= nums1[i], nums2[j] <= 10^9"
-    ],
-    examples: [
-      {
-        input: "nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3",
-        output: "[1,2,2,3,5,6]",
-        explanation: "The arrays are merged and sorted."
-      }
-    ]
-  },
-  { 
-    id: 4, 
-    title: "Binary Tree Inorder Traversal", 
-    difficulty: "Medium",
-    description: "Given the root of a binary tree, return the inorder traversal of its nodes' values.",
-    constraints: [
-      "The number of nodes in the tree is in the range [0, 100]",
-      "-100 <= Node.val <= 100"
-    ],
-    examples: [
-      {
-        input: "root = [1,null,2,3]",
-        output: "[1,3,2]",
-        explanation: "Inorder traversal visits nodes in left-root-right order."
-      }
-    ]
-  },
-  { 
-    id: 5, 
-    title: "Longest Palindromic Substring", 
-    difficulty: "Hard",
-    description: "Given a string s, return the longest palindromic substring in s.",
-    constraints: [
-      "1 <= s.length <= 1000",
-      "s consist of only digits and English letters"
-    ],
-    examples: [
-      {
-        input: 's = "babad"',
-        output: '"bab"',
-        explanation: '"aba" is also a valid answer.'
-      }
-    ]
-  },
-  { 
-    id: 6, 
-    title: "Regular Expression Matching", 
-    difficulty: "Hard",
-    description: "Given an input string s and a pattern p, implement regular expression matching with support for '.' and '*' where '.' matches any single character and '*' matches zero or more of the preceding element.",
-    constraints: [
-      "1 <= s.length <= 20",
-      "1 <= p.length <= 30",
-      "s contains only lowercase English letters",
-      "p contains only lowercase English letters, '.', and '*'"
-    ],
-    examples: [
-      {
-        input: 's = "aa", p = "a"',
-        output: "false",
-        explanation: "The pattern doesn't match the string."
-      }
-    ]
-  },
-];
-
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
     case 'Easy': return 'text-green-600 dark:text-green-400';
@@ -146,23 +23,49 @@ const getDifficultyBgColor = (difficulty) => {
 export default function ProblemDetail() {
   const { id } = useParams();
   const [problem, setProblem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiSection, setShowAiSection] = useState(false);
 
+  // Fetch problem data from API
   useEffect(() => {
-    const foundProblem = sampleProblems.find(p => p.id === parseInt(id));
-    setProblem(foundProblem);
-    
-    // Set default code template based on language
-    if (foundProblem) {
-      setDefaultCode(language, foundProblem);
+    const fetchProblem = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:3001/api/problems/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Problem not found: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setProblem(data.problem || data);
+      } catch (error) {
+        console.error('Error fetching problem:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProblem();
     }
-  }, [id, language]);
+  }, [id]);
+
+  // Set default code when problem or language changes
+  useEffect(() => {
+    if (problem) {
+      setDefaultCode(language, problem);
+    }
+  }, [problem, language]);
 
   const setDefaultCode = (lang, prob) => {
     const templates = {
@@ -236,30 +139,50 @@ int main() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setSubmissionResult(null);
+    
     try {
+      // For now, we'll use a mock authentication approach
+      // In a real app, you'd get the token from your auth context
+      const mockToken = 'mock-jwt-token-for-testing';
+      
       const response = await fetch('http://localhost:3001/api/submissions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${mockToken}`,
+          // Add Appwrite headers for backend integration
+          'x-appwrite-token': mockToken,
+          'x-user-email': 'test@example.com',
+          'x-user-name': 'Test User',
+          'x-user-avatar': ''
         },
         body: JSON.stringify({
-          problemId: problem.id,
+          problemId: problem._id,
           language: language,
-          code: code,
-          userId: 'user123', // In a real app, get from auth context
+          code: code
         }),
       });
 
-      const result = await response.json();
-      
-      if (response.ok) {
-        alert(`Submission Result: ${result.status}\n${result.message || ''}`);
-      } else {
-        alert(`Error: ${result.message || 'Failed to submit solution'}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      setSubmissionResult({
+        success: data.success,
+        result: data.result
+      });
     } catch (error) {
-      console.error('Submission error:', error);
-      alert('Failed to connect to backend. Please try again.');
+      console.error('Submission failed:', error);
+      setSubmissionResult({ 
+        success: false,
+        result: {
+          status: 'Error',
+          message: error.message || 'Failed to connect to backend. Please try again.'
+        }
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -270,27 +193,34 @@ int main() {
     
     setIsAiLoading(true);
     try {
+      // For now, we'll use a mock authentication approach
+      const mockToken = 'mock-jwt-token-for-testing';
+      
       const response = await fetch('http://localhost:3001/api/ai/review', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${mockToken}`,
+          'x-appwrite-token': mockToken,
+          'x-user-email': 'test@example.com',
+          'x-user-name': 'Test User',
+          'x-user-avatar': ''
         },
         body: JSON.stringify({
           question: aiQuestion,
           problemTitle: problem.title,
-          problemDescription: problem.description,
-          userCode: code,
+          code: code,
           language: language,
         }),
       });
 
-      const result = await response.json();
-      
-      if (response.ok) {
-        setAiResponse(result.response);
-      } else {
-        setAiResponse('Sorry, I encountered an error. Please try again.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
+
+      const result = await response.json();
+      setAiResponse(result.response);
     } catch (error) {
       console.error('AI Review error:', error);
       setAiResponse('Sorry, I cannot connect to the AI service right now. Please try again later.');
@@ -298,6 +228,44 @@ int main() {
       setIsAiLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-4">Loading Problem...</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Please wait while we fetch the problem details.</p>
+          <Link 
+            to="/problems" 
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <FiArrowLeft className="w-4 h-4 mr-2" />
+            Back to Problems
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-4">Error: {error}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">The problem you're looking for doesn't exist or an error occurred.</p>
+            <Link 
+              to="/problems" 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <FiArrowLeft className="w-4 h-4 mr-2" />
+              Back to Problems
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!problem) {
     return (
@@ -362,7 +330,7 @@ int main() {
               </div>
               <div className="px-4 sm:px-6 py-3 sm:py-4">
                 <ul className="space-y-2">
-                  {problem.constraints.map((constraint, index) => (
+                  {(problem.constraints || []).map((constraint, index) => (
                     <li key={index} className="text-gray-700 dark:text-gray-300 text-sm flex items-start">
                       <span className="text-gray-400 mr-2 mt-1">•</span>
                       <span className="font-mono break-all">{constraint}</span>
@@ -378,7 +346,7 @@ int main() {
                 <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Examples</h2>
               </div>
               <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4">
-                {problem.examples.map((example, index) => (
+                {(problem.examples || []).map((example, index) => (
                   <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-md p-3 sm:p-4">
                     <h3 className="font-medium text-gray-900 dark:text-white mb-3 text-sm">Example {index + 1}:</h3>
                     <div className="space-y-3">
@@ -434,21 +402,61 @@ int main() {
                   spellCheck="false"
                 />
                 
-                <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="flex-1 px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Solution'}
-                  </button>
-                  <button
-                    onClick={() => setDefaultCode(language, problem)}
-                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Reset
-                  </button>
-                </div>
+                                           <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                             <button
+                               onClick={handleSubmit}
+                               disabled={isSubmitting}
+                               className="flex-1 px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                             >
+                               {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                             </button>
+                             <button
+                               onClick={() => setDefaultCode(language, problem)}
+                               className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                             >
+                               Reset
+                             </button>
+                           </div>
+                           
+                           {/* Submission Result */}
+                           {submissionResult && (
+                             <div className={`mt-4 p-4 rounded-lg border ${
+                               submissionResult.success 
+                                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' 
+                                 : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                             }`}>
+                               <div className="flex items-center justify-between">
+                                 <h4 className={`font-medium ${
+                                   submissionResult.success 
+                                     ? 'text-green-800 dark:text-green-200' 
+                                     : 'text-red-800 dark:text-red-200'
+                                 }`}>
+                                   {submissionResult.success ? '✅ Submission Successful' : '❌ Submission Failed'}
+                                 </h4>
+                                 <span className={`text-sm font-medium ${
+                                   submissionResult.success 
+                                     ? 'text-green-600 dark:text-green-400' 
+                                     : 'text-red-600 dark:text-red-400'
+                                 }`}>
+                                   {submissionResult.result?.status || 'Unknown'}
+                                 </span>
+                               </div>
+                               {submissionResult.result?.message && (
+                                 <p className={`mt-2 text-sm ${
+                                   submissionResult.success 
+                                     ? 'text-green-700 dark:text-green-300' 
+                                     : 'text-red-700 dark:text-red-300'
+                                 }`}>
+                                   {submissionResult.result.message}
+                                 </p>
+                               )}
+                               {submissionResult.result?.passedTests !== undefined && (
+                                 <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                   Tests Passed: {submissionResult.result.passedTests}/{submissionResult.result.totalTests}
+                                 </div>
+                               )}
+                             </div>
+                           )}
               </div>
             </div>
 

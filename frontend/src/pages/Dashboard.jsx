@@ -71,10 +71,10 @@ export default function Dashboard() {
             <div className="text-center sm:text-left mb-4 sm:mb-0">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 Welcome back, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.name || user?.email}</span>! 👋
-              </h1>
+            </h1>
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
                 Ready to tackle today's coding challenges?
-              </p>
+            </p>
             </div>
             <Link to="/problems" className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <FiArrowRight className="w-4 h-4 mr-2" />
@@ -104,7 +104,7 @@ export default function Dashboard() {
                     {stat.label}
                   </div>
                 </div>
-              </div>
+        </div>
             ))}
           </div>
         </motion.div>
@@ -215,19 +215,19 @@ export default function Dashboard() {
                   >
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${action.color} rounded-lg flex items-center justify-center text-white mr-3 sm:mr-4 group-hover:scale-110 transition-transform duration-300 shadow-md`}>
                       <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
+        </div>
                     <div className="text-left">
                       <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
                         {action.title}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         {action.description}
-                      </p>
-                    </div>
+            </p>
+          </div>
                   </Link>
                 ))}
-              </div>
-            </div>
+        </div>
+          </div>
           </motion.div>
         </div>
       </div>
