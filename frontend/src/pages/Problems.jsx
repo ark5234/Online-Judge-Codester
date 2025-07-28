@@ -1,58 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiCode, FiFilter, FiSearch } from "react-icons/fi";
-
-const sampleProblems = [
-  {
-    id: 1,
-    title: "Two Sum",
-    difficulty: "Easy",
-    category: "Array",
-    acceptance: "85%",
-    submissions: 1250000
-  },
-  {
-    id: 2,
-    title: "Valid Parentheses",
-    difficulty: "Easy",
-    category: "Stack",
-    acceptance: "78%",
-    submissions: 980000
-  },
-  {
-    id: 3,
-    title: "Merge Sorted Array",
-    difficulty: "Medium",
-    category: "Array",
-    acceptance: "72%",
-    submissions: 750000
-  },
-  {
-    id: 4,
-    title: "Binary Tree Inorder Traversal",
-    difficulty: "Medium",
-    category: "Tree",
-    acceptance: "68%",
-    submissions: 650000
-  },
-  {
-    id: 5,
-    title: "Longest Palindromic Substring",
-    difficulty: "Hard",
-    category: "String",
-    acceptance: "45%",
-    submissions: 450000
-  },
-  {
-    id: 6,
-    title: "Regular Expression Matching",
-    difficulty: "Hard",
-    category: "Dynamic Programming",
-    acceptance: "38%",
-    submissions: 320000
-  }
-];
+import { FiCode, FiFilter, FiSearch, FiLoader } from "react-icons/fi";
 
 const getDifficultyTag = (difficulty) => {
   const colors = {
@@ -64,15 +13,58 @@ const getDifficultyTag = (difficulty) => {
 };
 
 export default function Problems() {
+  const [problems, setProblems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
 
-  const filteredProblems = sampleProblems.filter(problem => {
+  // Fetch problems from API
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:3001/api/problems');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch problems: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setProblems(data.problems || data);
+      } catch (error) {
+        console.error('Error fetching problems:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProblems();
+  }, []);
+
+  const filteredProblems = problems.filter(problem => {
     const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         problem.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         (problem.category && problem.category.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesDifficulty = selectedDifficulty === "All" || problem.difficulty === selectedDifficulty;
     return matchesSearch && matchesDifficulty;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6 flex items-center justify-center">
+        <FiLoader className="w-12 h-12 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6 flex items-center justify-center text-red-500">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6">
@@ -152,7 +144,7 @@ export default function Problems() {
             <div className="space-y-4">
               {filteredProblems.map((problem, index) => (
                 <motion.div
-                  key={problem.id}
+                  key={problem._id}
                   className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4 sm:p-6 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -160,14 +152,14 @@ export default function Problems() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
-                      <Link to={`/problems/${problem.id}`} className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 mb-2 block">
+                      <Link to={`/problems/${problem._id}`} className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 mb-2 block">
                         {problem.title}
                       </Link>
                       <span className="text-sm text-gray-600 dark:text-gray-400">{problem.category}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-medium">{problem.acceptance} acceptance</span>
-                      <span className="font-medium">{problem.submissions.toLocaleString()} submissions</span>
+                      <span className="font-medium">{problem.acceptanceRate || '0%'} acceptance</span>
+                      <span className="font-medium">{problem.totalSubmissions?.toLocaleString() || '0'} submissions</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
