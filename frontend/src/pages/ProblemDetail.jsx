@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiMessageCircle, FiSend, FiLoader } from 'react-icons/fi';
+import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft } from 'react-icons/fi';
 
 // Sample problems data (in a real app, this would come from an API)
 const sampleProblems = [
@@ -303,13 +303,14 @@ int main() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Problem Not Found</h1>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-4">Problem Not Found</h1>
             <p className="text-gray-600 dark:text-gray-400 mb-6">The problem you're looking for doesn't exist.</p>
             <Link 
               to="/problems" 
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
             >
+              <FiArrowLeft className="w-4 h-4 mr-2" />
               Back to Problems
             </Link>
           </div>
@@ -320,49 +321,51 @@ int main() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
         {/* Problem Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{problem.title}</h1>
-              <span className={`px-2 py-1 text-xs font-medium rounded ${getDifficultyBgColor(problem.difficulty)} ${getDifficultyColor(problem.difficulty)}`}>
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{problem.title}</h1>
+              <span className={`px-2 py-1 text-xs font-medium rounded ${getDifficultyBgColor(problem.difficulty)} ${getDifficultyColor(problem.difficulty)} w-fit`}>
                 {problem.difficulty}
               </span>
             </div>
             <Link 
               to="/problems" 
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
-              ← Back to Problems
+              <FiArrowLeft className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Back to Problems</span>
+              <span className="sm:hidden">Back</span>
             </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Problem Description */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Description */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Description</h2>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Description</h2>
               </div>
-              <div className="px-6 py-4">
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">{problem.description}</p>
+              <div className="px-4 sm:px-6 py-3 sm:py-4">
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base">{problem.description}</p>
               </div>
             </div>
 
             {/* Constraints */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Constraints</h2>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Constraints</h2>
               </div>
-              <div className="px-6 py-4">
+              <div className="px-4 sm:px-6 py-3 sm:py-4">
                 <ul className="space-y-2">
                   {problem.constraints.map((constraint, index) => (
                     <li key={index} className="text-gray-700 dark:text-gray-300 text-sm flex items-start">
                       <span className="text-gray-400 mr-2 mt-1">•</span>
-                      <span className="font-mono">{constraint}</span>
+                      <span className="font-mono break-all">{constraint}</span>
                     </li>
                   ))}
                 </ul>
@@ -371,24 +374,24 @@ int main() {
 
             {/* Examples */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Examples</h2>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Examples</h2>
               </div>
-              <div className="px-6 py-4 space-y-4">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4">
                 {problem.examples.map((example, index) => (
-                  <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-md p-4">
+                  <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-md p-3 sm:p-4">
                     <h3 className="font-medium text-gray-900 dark:text-white mb-3 text-sm">Example {index + 1}:</h3>
                     <div className="space-y-3">
                       <div>
                         <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">Input: </span>
-                        <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                          <code className="text-sm text-gray-900 dark:text-gray-100">{example.input}</code>
+                        <div className="mt-1 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-md overflow-x-auto">
+                          <code className="text-sm text-gray-900 dark:text-gray-100 break-all">{example.input}</code>
                         </div>
                       </div>
                       <div>
                         <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">Output: </span>
-                        <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                          <code className="text-sm text-gray-900 dark:text-gray-100">{example.output}</code>
+                        <div className="mt-1 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-md overflow-x-auto">
+                          <code className="text-sm text-gray-900 dark:text-gray-100 break-all">{example.output}</code>
                         </div>
                       </div>
                       <div>
@@ -403,16 +406,16 @@ int main() {
           </div>
 
           {/* Right Column - Code Editor and AI Review */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Code Editor */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">Code Editor</h2>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Code Editor</h2>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
                   >
                     <option value="javascript">JavaScript</option>
                     <option value="python">Python</option>
@@ -422,26 +425,26 @@ int main() {
                 </div>
               </div>
               
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <textarea
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-80 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full h-64 sm:h-80 p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Write your solution here..."
                   spellCheck="false"
                 />
                 
-                <div className="flex gap-3 mt-4">
+                <div className="flex flex-col sm:flex-row gap-3 mt-4">
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Solution'}
                   </button>
                   <button
                     onClick={() => setDefaultCode(language, problem)}
-                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     Reset
                   </button>
@@ -451,10 +454,10 @@ int main() {
 
             {/* AI Review Section - Below Code Editor */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-                    <FiMessageCircle className="w-5 h-5 mr-2 text-blue-600" />
+                  <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                    <FiMessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
                     AI Review Assistant
                   </h2>
                   <button
@@ -467,8 +470,8 @@ int main() {
               </div>
               
               {showAiSection && (
-                <div className="px-6 py-4 space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4">
                     <p className="text-sm text-blue-800 dark:text-blue-200">
                       💡 Ask me anything about this problem! I can help with:
                     </p>
@@ -491,7 +494,7 @@ int main() {
                     <button
                       onClick={handleAiQuestion}
                       disabled={isAiLoading || !aiQuestion.trim()}
-                      className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center justify-center w-full px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {isAiLoading ? (
                         <>
@@ -508,9 +511,9 @@ int main() {
                   </div>
                   
                   {aiResponse && (
-                    <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                    <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4">
                       <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">AI Response:</h4>
-                      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
                         {aiResponse}
                       </div>
                     </div>
