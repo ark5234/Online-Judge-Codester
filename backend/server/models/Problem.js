@@ -24,7 +24,8 @@ const problemSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    index: true
   },
   description: {
     type: String,
@@ -103,8 +104,7 @@ const problemSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
-problemSchema.index({ title: 1 });
+// Indexes for better query performance (removed duplicate title index)
 problemSchema.index({ difficulty: 1 });
 problemSchema.index({ category: 1 });
 problemSchema.index({ tags: 1 });
@@ -113,9 +113,16 @@ problemSchema.index({ isActive: 1 });
 // Method to update acceptance rate
 problemSchema.methods.updateAcceptanceRate = function() {
   if (this.totalSubmissions > 0) {
-    this.acceptanceRate = Math.round((this.successfulSubmissions / this.totalSubmissions) * 100);
+    const newAcceptanceRate = Math.round((this.successfulSubmissions / this.totalSubmissions) * 100);
+    
+    // Use findOneAndUpdate to avoid parallel save conflicts
+    return this.constructor.findOneAndUpdate(
+      { _id: this._id },
+      { acceptanceRate: newAcceptanceRate },
+      { new: true }
+    );
   }
-  return this.save();
+  return Promise.resolve(this);
 };
 
 // Method to add submission result
@@ -124,8 +131,23 @@ problemSchema.methods.addSubmission = function(isSuccessful) {
   if (isSuccessful) {
     this.successfulSubmissions += 1;
   }
-  this.updateAcceptanceRate();
-  return this.save();
+  
+  // Use findOneAndUpdate to avoid parallel save conflicts
+  return this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $inc: { 
+        totalSubmissions: 1,
+        ...(isSuccessful && { successfulSubmissions: 1 })
+      }
+    },
+    { new: true }
+  ).then(updatedProblem => {
+    if (updatedProblem) {
+      return updatedProblem.updateAcceptanceRate();
+    }
+    return this;
+  });
 };
 
 // Static method to get problems by difficulty

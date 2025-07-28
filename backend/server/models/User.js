@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    index: true
   },
   name: {
     type: String,
@@ -64,8 +65,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for better query performance
-userSchema.index({ email: 1 });
+// Index for better query performance (removed duplicate email index)
 userSchema.index({ 'stats.problemsSolved': -1 });
 
 // Virtual for user's rank
