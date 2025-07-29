@@ -10,6 +10,7 @@ import ProblemDetail from './pages/ProblemDetail';
 import Status from './pages/Status';
 import Ranks from './pages/Ranks';
 import Discuss from './pages/Discuss';
+import DiscussionDetail from './pages/DiscussionDetail';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
@@ -40,6 +41,7 @@ function AppRoutes() {
           <Route path="/status" element={<Status />} />
           <Route path="/ranks" element={<Ranks />} />
           <Route path="/discuss" element={<Discuss />} />
+        <Route path="/discuss/:id" element={<DiscussionDetail />} />
           <Route path="/contests" element={<Contests />} />
           <Route path="/profile" element={
             <ProtectedRoute>

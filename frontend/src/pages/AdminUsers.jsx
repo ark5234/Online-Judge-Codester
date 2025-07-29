@@ -37,8 +37,8 @@ export default function AdminUsers() {
         problemsSolved: 15,
         totalSubmissions: 45,
         accuracy: 85.5,
-        lastLogin: "2024-01-15T10:30:00Z",
-        joinedAt: "2023-06-15T09:00:00Z"
+        lastLogin: "2025-01-15T10:30:00Z",
+        joinedAt: "2024-06-15T09:00:00Z"
       },
       {
         id: 2,
@@ -49,8 +49,8 @@ export default function AdminUsers() {
         problemsSolved: 8,
         totalSubmissions: 22,
         accuracy: 72.3,
-        lastLogin: "2024-01-14T15:45:00Z",
-        joinedAt: "2023-08-20T14:30:00Z"
+        lastLogin: "2025-01-14T15:45:00Z",
+        joinedAt: "2024-08-20T14:30:00Z"
       },
       {
         id: 3,
@@ -61,8 +61,8 @@ export default function AdminUsers() {
         problemsSolved: 25,
         totalSubmissions: 67,
         accuracy: 92.1,
-        lastLogin: "2024-01-15T12:00:00Z",
-        joinedAt: "2023-01-01T00:00:00Z"
+        lastLogin: "2025-01-15T12:00:00Z",
+        joinedAt: "2024-01-01T00:00:00Z"
       },
       {
         id: 4,
@@ -73,8 +73,8 @@ export default function AdminUsers() {
         problemsSolved: 0,
         totalSubmissions: 5,
         accuracy: 0,
-        lastLogin: "2024-01-10T08:15:00Z",
-        joinedAt: "2024-01-05T16:20:00Z"
+        lastLogin: "2025-01-10T08:15:00Z",
+        joinedAt: "2025-01-05T16:20:00Z"
       }
     ];
     

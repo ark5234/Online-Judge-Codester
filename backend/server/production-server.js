@@ -9,7 +9,8 @@ require('dotenv').config();
 // Import models
 const User = require('./models/User');
 const Problem = require('./models/Problem');
-const Submission = require('./models/Submission'); // Added Submission model import
+const Submission = require('./models/Submission');
+const Discussion = require('./models/Discussion');
 
 // Import services
 const aiService = require('./services/aiService');
@@ -629,6 +630,171 @@ app.post('/api/ai/learning-path', guestAuth, async (req, res) => {
     res.json({ learningPath });
   } catch (error) {
     res.status(500).json({ error: 'Failed to generate learning path' });
+  }
+});
+
+// ===== DISCUSSION ENDPOINTS =====
+
+// Get all discussions
+app.get('/api/discussions', async (req, res) => {
+  try {
+    const { page = 1, limit = 10, tag } = req.query;
+    const skip = (page - 1) * limit;
+    
+    let query = { isActive: true };
+    if (tag) {
+      query.tags = { $in: [tag.toLowerCase()] };
+    }
+    
+    const discussions = await Discussion.find(query)
+      .populate('author', 'name email avatar')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await Discussion.countDocuments(query);
+    
+    res.json({
+      discussions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching discussions:', error);
+    res.status(500).json({ error: 'Failed to fetch discussions' });
+  }
+});
+
+// Get single discussion
+app.get('/api/discussions/:id', async (req, res) => {
+  try {
+    const discussion = await Discussion.findById(req.params.id)
+      .populate('author', 'name email avatar')
+      .populate('replies.author', 'name email avatar');
+    
+    if (!discussion) {
+      return res.status(404).json({ error: 'Discussion not found' });
+    }
+    
+    // Add view
+    await discussion.addView();
+    
+    res.json({ discussion });
+  } catch (error) {
+    console.error('Error fetching discussion:', error);
+    res.status(500).json({ error: 'Failed to fetch discussion' });
+  }
+});
+
+// Create new discussion (authenticated users only)
+app.post('/api/discussions', guestAuth, async (req, res) => {
+  try {
+    if (req.user.role === 'guest') {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to create discussions'
+      });
+    }
+    
+    const { title, content, tags } = req.body;
+    
+    if (!title || !content) {
+      return res.status(400).json({ 
+        error: 'Title and content are required' 
+      });
+    }
+    
+    const discussion = new Discussion({
+      title,
+      content,
+      author: req.user._id,
+      authorName: req.user.name,
+      tags: tags || []
+    });
+    
+    await discussion.save();
+    
+    res.status(201).json({ 
+      success: true,
+      discussion 
+    });
+  } catch (error) {
+    console.error('Error creating discussion:', error);
+    res.status(500).json({ error: 'Failed to create discussion' });
+  }
+});
+
+// Add reply to discussion (authenticated users only)
+app.post('/api/discussions/:id/replies', guestAuth, async (req, res) => {
+  try {
+    if (req.user.role === 'guest') {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to reply to discussions'
+      });
+    }
+    
+    const { content } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ 
+        error: 'Reply content is required' 
+      });
+    }
+    
+    const discussion = await Discussion.findById(req.params.id);
+    
+    if (!discussion) {
+      return res.status(404).json({ error: 'Discussion not found' });
+    }
+    
+    const replyData = {
+      author: req.user._id,
+      authorName: req.user.name,
+      content
+    };
+    
+    await discussion.addReply(replyData);
+    
+    res.json({ 
+      success: true,
+      discussion 
+    });
+  } catch (error) {
+    console.error('Error adding reply:', error);
+    res.status(500).json({ error: 'Failed to add reply' });
+  }
+});
+
+// Like/unlike discussion (authenticated users only)
+app.post('/api/discussions/:id/like', guestAuth, async (req, res) => {
+  try {
+    if (req.user.role === 'guest') {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to like discussions'
+      });
+    }
+    
+    const discussion = await Discussion.findById(req.params.id);
+    
+    if (!discussion) {
+      return res.status(404).json({ error: 'Discussion not found' });
+    }
+    
+    await discussion.toggleLike(req.user._id);
+    
+    res.json({ 
+      success: true,
+      discussion 
+    });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    res.status(500).json({ error: 'Failed to toggle like' });
   }
 });
 
