@@ -71,7 +71,7 @@ export default function Profile() {
                     <FiCalendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Member Since</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">January 2024</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">January 2025</p>
                     </div>
                   </div>
                 </div>

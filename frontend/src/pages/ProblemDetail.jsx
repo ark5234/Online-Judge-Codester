@@ -71,69 +71,96 @@ export default function ProblemDetail() {
   }, [problem, language]);
 
   const setDefaultCode = (lang, prob) => {
+    // Generate function name from problem title
+    const functionName = prob.title
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .replace(/^[0-9]/, '')
+      .toLowerCase();
+    
+    // Generate parameter types based on problem examples
+    let paramTypes = [];
+    let returnType = '';
+    
+    if (prob.examples && prob.examples.length > 0) {
+      const example = prob.examples[0];
+      if (example.input && example.output) {
+        // Try to infer types from examples
+        try {
+          const input = JSON.parse(example.input);
+          const output = JSON.parse(example.output);
+          
+          if (Array.isArray(input)) {
+            paramTypes.push('number[]');
+          } else if (typeof input === 'number') {
+            paramTypes.push('number');
+          } else if (typeof input === 'string') {
+            paramTypes.push('string');
+          }
+          
+          if (Array.isArray(output)) {
+            returnType = 'number[]';
+          } else if (typeof output === 'number') {
+            returnType = 'number';
+          } else if (typeof output === 'string') {
+            returnType = 'string';
+          }
+        } catch (e) {
+          // Fallback to default types
+          paramTypes = ['number[]', 'number'];
+          returnType = 'number[]';
+        }
+      }
+    }
+    
+    // Default types if no examples or parsing failed
+    if (paramTypes.length === 0) {
+      paramTypes = ['number[]', 'number'];
+      returnType = 'number[]';
+    }
+    
     const templates = {
       javascript: `/**
- * @param {number[]} nums
- * @param {number} target
- * @return {number[]}
+ * @param {${paramTypes.join(', ')}}
+ * @return {${returnType}}
  */
-var twoSum = function(nums, target) {
+var ${functionName} = function(${paramTypes.map((_, i) => `param${i + 1}`).join(', ')}) {
     // Your solution here
     
 };
 
 // Test cases
-console.log(twoSum([2,7,11,15], 9)); // Expected: [0,1]
-console.log(twoSum([3,2,4], 6)); // Expected: [1,2]
+${prob.examples ? prob.examples.map((example, i) => 
+  `console.log(${functionName}(${example.input})); // Expected: ${example.output}`
+).join('\n') : `console.log(${functionName}([1, 2, 3])); // Add your test cases`}
 `,
-      python: `def twoSum(nums, target):
+      python: `def ${functionName}(${paramTypes.map((_, i) => `param${i + 1}`).join(', ')}):
     """
-    :type nums: List[int]
-    :type target: int
-    :rtype: List[int]
+    :type ${paramTypes.map((_, i) => `param${i + 1}: ${paramTypes[i]}`).join(', ')}
+    :rtype: ${returnType}
     """
     # Your solution here
     pass
 
 # Test cases
-print(twoSum([2,7,11,15], 9))  # Expected: [0,1]
-print(twoSum([3,2,4], 6))      # Expected: [1,2]
+${prob.examples ? prob.examples.map((example, i) => 
+  `print(${functionName}(${example.input}))  # Expected: ${example.output}`
+).join('\n') : `print(${functionName}([1, 2, 3]))  # Add your test cases`}
 `,
       java: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
+    public ${returnType} ${functionName}(${paramTypes.map((type, i) => `${type} param${i + 1}`).join(', ')}) {
         // Your solution here
-        return new int[]{};
+        return ${returnType === 'number[]' ? 'new int[]{}' : returnType === 'number' ? '0' : '""'};
     }
 }
 
 // Test cases
-Solution solution = new Solution();
-System.out.println(Arrays.toString(solution.twoSum(new int[]{2,7,11,15}, 9))); // Expected: [0,1]
-System.out.println(Arrays.toString(solution.twoSum(new int[]{3,2,4}, 6))); // Expected: [1,2]
-`,
-      cpp: `#include <vector>
-using namespace std;
-
-class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // Your solution here
-        return {};
+public class Main {
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        ${prob.examples ? prob.examples.map((example, i) => 
+          `System.out.println(Arrays.toString(solution.${functionName}(${example.input}))); // Expected: ${example.output}`
+        ).join('\n        ') : `System.out.println(Arrays.toString(solution.${functionName}(new int[]{1, 2, 3}))); // Add your test cases`}
     }
-};
-
-// Test cases
-int main() {
-    Solution solution;
-    vector<int> nums1 = {2,7,11,15};
-    vector<int> result1 = solution.twoSum(nums1, 9);
-    // Expected: [0,1]
-    
-    vector<int> nums2 = {3,2,4};
-    vector<int> result2 = solution.twoSum(nums2, 6);
-    // Expected: [1,2]
-    
-    return 0;
 }`
     };
     

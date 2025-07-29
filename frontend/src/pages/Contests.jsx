@@ -8,7 +8,7 @@ const sampleContests = [
   { 
     id: 1, 
     name: "Weekly Coding Challenge", 
-    startTime: "2024-01-15 14:00", 
+          startTime: "2025-01-15 14:00", 
     duration: "2h", 
     participants: 150,
     description: "A weekly challenge featuring algorithmic problems of varying difficulty levels.",
@@ -17,7 +17,7 @@ const sampleContests = [
   { 
     id: 2, 
     name: "Algorithm Master", 
-    startTime: "2024-01-20 10:00", 
+          startTime: "2025-01-20 10:00", 
     duration: "3h", 
     participants: 89,
     description: "Advanced algorithmic problems for experienced programmers.",
@@ -26,7 +26,7 @@ const sampleContests = [
   { 
     id: 3, 
     name: "Data Structures Contest", 
-    startTime: "2024-01-25 16:00", 
+          startTime: "2025-01-25 16:00", 
     duration: "1.5h", 
     participants: 234,
     description: "Focus on data structure implementation and optimization.",
@@ -35,7 +35,7 @@ const sampleContests = [
   { 
     id: 4, 
     name: "Dynamic Programming Challenge", 
-    startTime: "2024-01-30 12:00", 
+          startTime: "2025-01-30 12:00", 
     duration: "2.5h", 
     participants: 67,
     description: "Master the art of dynamic programming with challenging problems.",

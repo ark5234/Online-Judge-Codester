@@ -36,9 +36,9 @@ export default function Home() {
   ];
 
   const upcomingContests = [
-    { id: 1, title: "Weekly Coding Challenge", date: "Dec 15, 2024", duration: "2 hours", participants: 156 },
-    { id: 2, title: "Algorithm Masterclass", date: "Dec 20, 2024", duration: "3 hours", participants: 89 },
-    { id: 3, title: "Data Structures Contest", date: "Dec 25, 2024", duration: "1.5 hours", participants: 234 }
+            { id: 1, title: "Weekly Coding Challenge", date: "Jan 15, 2025", duration: "2 hours", participants: 156 },
+        { id: 2, title: "Algorithm Masterclass", date: "Jan 20, 2025", duration: "3 hours", participants: 89 },
+        { id: 3, title: "Data Structures Contest", date: "Jan 25, 2025", duration: "1.5 hours", participants: 234 }
   ];
 
   const recentDiscussions = [

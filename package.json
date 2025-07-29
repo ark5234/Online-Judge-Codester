@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "appwrite": "^18.2.0"
+    "appwrite": "^18.2.0",
+    "monaco-editor": "^0.52.2"
   }
 }
