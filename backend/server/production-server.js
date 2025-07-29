@@ -9,6 +9,7 @@ require('dotenv').config();
 // Import models
 const User = require('./models/User');
 const Problem = require('./models/Problem');
+const Submission = require('./models/Submission'); // Added Submission model import
 
 // Import services
 const aiService = require('./services/aiService');
@@ -131,20 +132,98 @@ app.post('/api/auth/appwrite', verifyAppwriteToken, async (req, res) => {
   }
 });
 
-// Get current user
-app.get('/api/auth/me', authenticateToken, async (req, res) => {
-  res.json({
-    success: true,
-    user: {
-      id: req.user._id,
-      email: req.user.email,
-      name: req.user.name,
-      avatar: req.user.avatar,
-      role: req.user.role,
-      stats: req.user.stats,
-      preferences: req.user.preferences
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        message: 'Email and password are required' 
+      });
     }
-  });
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        message: 'Email or password is incorrect' 
+      });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({ 
+        error: 'Account deactivated',
+        message: 'Your account has been deactivated. Please contact support.' 
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await user.comparePassword(password);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        message: 'Email or password is incorrect' 
+      });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isAdmin: user.role === 'admin'
+      },
+      token
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: 'Login failed',
+      message: 'Failed to authenticate user' 
+    });
+  }
+});
+
+// Get current user endpoint
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isAdmin: user.role === 'admin',
+        stats: user.stats
+      }
+    });
+
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get user data',
+      message: 'Failed to retrieve user information' 
+    });
+  }
 });
 
 // Update user preferences
@@ -163,6 +242,133 @@ app.put('/api/auth/preferences', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update preferences' });
+  }
+});
+
+// Registration endpoint
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password, adminCode } = req.body;
+
+    // Validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        message: 'Name, email, and password are required' 
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        error: 'Password too short',
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({ 
+        error: 'User already exists',
+        message: 'An account with this email already exists' 
+      });
+    }
+
+    // Determine user role
+    let role = 'user';
+    let isAdmin = false;
+
+    // Check for admin registration
+    if (adminCode) {
+      // Verify admin code (you can customize this logic)
+      const validAdminCodes = process.env.ADMIN_CODES?.split(',') || ['ADMIN2024', 'SUPERADMIN'];
+      
+      if (validAdminCodes.includes(adminCode)) {
+        role = 'admin';
+        isAdmin = true;
+      } else {
+        return res.status(403).json({ 
+          error: 'Invalid admin code',
+          message: 'The provided admin code is invalid' 
+        });
+      }
+    }
+
+    // Check for specific admin email
+    if (email.toLowerCase().trim() === 'vikrantkawadkar2099@gmail.com') {
+      role = 'admin';
+      isAdmin = true;
+    }
+
+    // Create new user
+    const user = new User({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: password, // Will be hashed by the model
+      role: role,
+      isActive: true
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isAdmin: isAdmin
+      },
+      token
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      error: 'Registration failed',
+      message: 'Failed to create user account' 
+    });
+  }
+});
+
+// Admin code verification endpoint
+app.post('/api/auth/verify-admin-code', async (req, res) => {
+  try {
+    const { adminCode } = req.body;
+
+    if (!adminCode) {
+      return res.status(400).json({ 
+        error: 'Admin code required',
+        message: 'Please provide an admin code' 
+      });
+    }
+
+    // Verify admin code (you can customize this logic)
+    const validAdminCodes = process.env.ADMIN_CODES?.split(',') || ['ADMIN2024', 'SUPERADMIN'];
+    
+    if (validAdminCodes.includes(adminCode)) {
+      res.json({ 
+        valid: true,
+        message: 'Admin code is valid' 
+      });
+    } else {
+      res.status(403).json({ 
+        valid: false,
+        error: 'Invalid admin code',
+        message: 'The provided admin code is invalid' 
+      });
+    }
+
+  } catch (error) {
+    console.error('Admin code verification error:', error);
+    res.status(500).json({ 
+      error: 'Verification failed',
+      message: 'Failed to verify admin code' 
+    });
   }
 });
 
@@ -410,40 +616,98 @@ app.post('/api/admin/problems', authenticateToken, requireAdmin, async (req, res
 // Get system stats (admin only)
 app.get('/api/admin/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const [userStats, problemStats, evaluationStats] = await Promise.all([
-      User.aggregate([
-        {
-          $group: {
-            _id: null,
-            totalUsers: { $sum: 1 },
-            activeUsers: { $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] } },
-            averageAccuracy: { $avg: '$stats.accuracy' }
-          }
-        }
-      ]),
-      Problem.aggregate([
-        {
-          $group: {
-            _id: null,
-            totalProblems: { $sum: 1 },
-            activeProblems: { $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] } },
-            averageDifficulty: { $avg: { $cond: [
-              { $eq: ['$difficulty', 'Easy'] }, 1,
-              { $cond: [{ $eq: ['$difficulty', 'Medium'] }, 2, 3] }
-            ]}}
-          }
-        }
-      ]),
-      evaluationService.getEvaluationStats()
-    ]);
+    const totalUsers = await User.countDocuments();
+    const totalProblems = await Problem.countDocuments();
+    const totalSubmissions = await Submission.countDocuments();
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const adminUsers = await User.countDocuments({ role: 'admin' });
     
     res.json({
-      users: userStats[0] || {},
-      problems: problemStats[0] || {},
-      evaluations: evaluationStats
+      totalUsers,
+      totalProblems,
+      totalSubmissions,
+      activeUsers,
+      adminUsers
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get admin stats' });
+    console.error('Error fetching admin stats:', error);
+    res.status(500).json({ error: 'Failed to fetch admin stats' });
+  }
+});
+
+// Admin Routes
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}).select('-__v').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.put('/api/admin/users/:userId/role', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { role } = req.body;
+    const { userId } = req.params;
+    
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true }
+    ).select('-__v');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+});
+
+app.put('/api/admin/users/:userId/status', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { isActive } = req.body;
+    const { userId } = req.params;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isActive },
+      { new: true }
+    ).select('-__v');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    res.status(500).json({ error: 'Failed to update user status' });
+  }
+});
+
+app.delete('/api/admin/users/:userId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findByIdAndDelete(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 

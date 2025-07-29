@@ -12,8 +12,10 @@ import Ranks from './pages/Ranks';
 import Discuss from './pages/Discuss';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
+import AdminRoute from './routes/AdminRoute';
 import { ThemeProvider } from './context/ThemeProvider';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -43,6 +45,12 @@ function AppRoutes() {
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
+          } />
+          {/* Admin Routes */}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           } />
           {/* Optional: Fallback Route for 404 */}
           <Route path="*" element={<NotFound />} />

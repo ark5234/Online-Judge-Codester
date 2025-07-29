@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FiMenu, FiX, FiLogOut, FiSettings, FiUser, FiSun, FiMoon } from "react-icons/fi";
+import { FiMenu, FiX, FiLogOut, FiSettings, FiUser, FiSun, FiMoon, FiShield } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeProvider";
 
@@ -14,7 +14,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -134,6 +134,16 @@ export default function Navbar() {
                       <FiSettings className="w-4 h-4 mr-3" />
                       Dashboard
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="flex items-center px-4 py-3 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors duration-200"
+                        onClick={() => setUserDropdownOpen(false)}
+                      >
+                        <FiShield className="w-4 h-4 mr-3" />
+                        Admin Panel
+                      </Link>
+                    )}
                     <hr className="my-2 border-gray-200 dark:border-gray-600" />
                     <button
                       onClick={handleLogout}
@@ -228,6 +238,16 @@ export default function Navbar() {
                     <FiSettings className="w-4 h-4 inline mr-3" />
                     Dashboard
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="block px-4 py-3 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors duration-200"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <FiShield className="w-4 h-4 inline mr-3" />
+                      Admin Panel
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
