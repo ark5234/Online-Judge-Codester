@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft } from 'react-icons/fi';
 
 const getDifficultyColor = (difficulty) => {
@@ -22,6 +23,8 @@ const getDifficultyBgColor = (difficulty) => {
 
 export default function ProblemDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -142,21 +145,29 @@ int main() {
     setSubmissionResult(null);
     
     try {
-      // For now, we'll use a mock authentication approach
-      // In a real app, you'd get the token from your auth context
-      const mockToken = 'mock-jwt-token-for-testing';
+      // For non-authenticated users, we'll use a guest submission approach
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add user info if authenticated
+      if (user) {
+        headers['Authorization'] = `Bearer ${user.$id}`;
+        headers['x-appwrite-token'] = user.$id;
+        headers['x-user-email'] = user.email;
+        headers['x-user-name'] = user.name || user.email;
+        headers['x-user-avatar'] = user.avatar || '';
+      } else {
+        // For guest users, use anonymous submission
+        headers['x-guest-submission'] = 'true';
+        headers['x-user-email'] = 'guest@codester.com';
+        headers['x-user-name'] = 'Guest User';
+        headers['x-user-avatar'] = '';
+      }
       
       const response = await fetch('http://localhost:3001/api/submissions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockToken}`,
-          // Add Appwrite headers for backend integration
-          'x-appwrite-token': mockToken,
-          'x-user-email': 'test@example.com',
-          'x-user-name': 'Test User',
-          'x-user-avatar': ''
-        },
+        headers,
         body: JSON.stringify({
           problemId: problem._id,
           language: language,
@@ -193,19 +204,28 @@ int main() {
     
     setIsAiLoading(true);
     try {
-      // For now, we'll use a mock authentication approach
-      const mockToken = 'mock-jwt-token-for-testing';
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add user info if authenticated
+      if (user) {
+        headers['Authorization'] = `Bearer ${user.$id}`;
+        headers['x-appwrite-token'] = user.$id;
+        headers['x-user-email'] = user.email;
+        headers['x-user-name'] = user.name || user.email;
+        headers['x-user-avatar'] = user.avatar || '';
+      } else {
+        // For guest users, use anonymous AI review
+        headers['x-guest-submission'] = 'true';
+        headers['x-user-email'] = 'guest@codester.com';
+        headers['x-user-name'] = 'Guest User';
+        headers['x-user-avatar'] = '';
+      }
       
       const response = await fetch('http://localhost:3001/api/ai/review', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockToken}`,
-          'x-appwrite-token': mockToken,
-          'x-user-email': 'test@example.com',
-          'x-user-name': 'Test User',
-          'x-user-avatar': ''
-        },
+        headers,
         body: JSON.stringify({
           question: aiQuestion,
           problemTitle: problem.title,
@@ -393,6 +413,14 @@ int main() {
                 </div>
               </div>
               
+              {!user && (
+                <div className="px-4 sm:px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-700">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    💡 You're solving as a guest. Sign in to save your progress and track your submissions!
+                  </p>
+                </div>
+              )}
+              
               <div className="p-4 sm:p-6">
                 <textarea
                   value={code}
@@ -461,74 +489,122 @@ int main() {
             </div>
 
             {/* AI Review Section - Below Code Editor */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white flex items-center">
-                    <FiMessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
+            {user ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                      <FiMessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
+                      AI Review Assistant
+                    </h2>
+                    <button
+                      onClick={() => setShowAiSection(!showAiSection)}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                    >
+                      {showAiSection ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+                
+                {showAiSection && (
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4">
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        💡 Ask me anything about this problem! I can help with:
+                      </p>
+                      <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
+                        <li>• Understanding the problem statement</li>
+                        <li>• Explaining the approach and algorithm</li>
+                        <li>• Reviewing your code and suggesting improvements</li>
+                        <li>• Providing hints and tips</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <textarea
+                        value={aiQuestion}
+                        onChange={(e) => setAiQuestion(e.target.value)}
+                        placeholder="Ask your question here... (e.g., 'Can you explain the optimal approach for this problem?')"
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows="3"
+                      />
+                      <button
+                        onClick={handleAiQuestion}
+                        disabled={isAiLoading || !aiQuestion.trim()}
+                        className="flex items-center justify-center w-full px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isAiLoading ? (
+                          <>
+                            <FiLoader className="w-4 h-4 mr-2 animate-spin" />
+                            Thinking...
+                          </>
+                        ) : (
+                          <>
+                            <FiSend className="w-4 h-4 mr-2" />
+                            Ask AI
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    
+                    {aiResponse && (
+                      <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">AI Response:</h4>
+                        <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                          {aiResponse}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                      <FiMessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
+                      AI Review Assistant
+                    </h2>
+                    <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-medium rounded-full">
+                      Premium
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="px-4 sm:px-6 py-6 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FiMessageCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     AI Review Assistant
-                  </h2>
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">
+                    Get personalized help with problem understanding, code review, and optimization tips.
+                  </p>
+                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    <div className="flex items-center justify-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Understand problem statements
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Get code review and improvements
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Receive hints and tips
+                    </div>
+                  </div>
                   <button
-                    onClick={() => setShowAiSection(!showAiSection)}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                    onClick={() => navigate('/login')}
+                    className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    {showAiSection ? 'Hide' : 'Show'}
+                    Sign In to Access AI Assistant
                   </button>
                 </div>
               </div>
-              
-              {showAiSection && (
-                <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4">
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                      💡 Ask me anything about this problem! I can help with:
-                    </p>
-                    <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
-                      <li>• Understanding the problem statement</li>
-                      <li>• Explaining the approach and algorithm</li>
-                      <li>• Reviewing your code and suggesting improvements</li>
-                      <li>• Providing hints and tips</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <textarea
-                      value={aiQuestion}
-                      onChange={(e) => setAiQuestion(e.target.value)}
-                      placeholder="Ask your question here... (e.g., 'Can you explain the optimal approach for this problem?')"
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows="3"
-                    />
-                    <button
-                      onClick={handleAiQuestion}
-                      disabled={isAiLoading || !aiQuestion.trim()}
-                      className="flex items-center justify-center w-full px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isAiLoading ? (
-                        <>
-                          <FiLoader className="w-4 h-4 mr-2 animate-spin" />
-                          Thinking...
-                        </>
-                      ) : (
-                        <>
-                          <FiSend className="w-4 h-4 mr-2" />
-                          Ask AI
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  
-                  {aiResponse && (
-                    <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">AI Response:</h4>
-                      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                        {aiResponse}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

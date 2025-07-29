@@ -2,22 +2,30 @@ import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiAward, FiTrendingUp, FiUser } from "react-icons/fi";
+import { FiAward, FiTrendingUp, FiUser, FiLogIn } from "react-icons/fi";
 
 const sampleRanks = [
   { rank: 1, name: "Alice Johnson", score: 2840, problems: 156 },
   { rank: 2, name: "Bob Smith", score: 2750, problems: 142 },
   { rank: 3, name: "Charlie Brown", score: 2680, problems: 138 },
+  { rank: 4, name: "David Wilson", score: 2650, problems: 135 },
+  { rank: 5, name: "Emma Davis", score: 2620, problems: 132 },
+  { rank: 6, name: "Frank Miller", score: 2580, problems: 128 },
+  { rank: 7, name: "Grace Lee", score: 2550, problems: 125 },
+  { rank: 8, name: "Henry Taylor", score: 2520, problems: 122 },
+  { rank: 9, name: "Ivy Chen", score: 2490, problems: 120 },
+  { rank: 10, name: "Jack Anderson", score: 2460, problems: 118 },
 ];
 
 export default function Ranks() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
+  const handleInteraction = () => {
+    if (!user) {
+      navigate("/login");
+    }
+  };
 
   const getRankIcon = (rank) => {
     if (rank === 1) return <FiAward className="w-5 h-5 text-yellow-500" />;
@@ -48,6 +56,13 @@ export default function Ranks() {
             <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
               Top performers and rankings
             </p>
+            {!user && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  💡 Sign in to see your ranking and compete with others!
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -145,6 +160,30 @@ export default function Ranks() {
                 </motion.div>
               ))}
             </div>
+
+            {/* Login Prompt for Non-Authenticated Users */}
+            {!user && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="mt-6 p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl text-white text-center"
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <FiLogIn className="w-6 h-6 mr-2" />
+                  <h3 className="text-lg font-semibold">Join the Competition!</h3>
+                </div>
+                <p className="text-blue-100 mb-4">
+                  Sign in to see your ranking, track your progress, and compete with other coders!
+                </p>
+                <button
+                  onClick={handleInteraction}
+                  className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Sign In to Compete
+                </button>
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </div>
