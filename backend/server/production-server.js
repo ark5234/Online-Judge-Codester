@@ -16,7 +16,7 @@ const aiService = require('./services/aiService');
 const evaluationService = require('./services/evaluationService');
 
 // Import middleware
-const { authenticateToken, optionalAuth, requireAdmin, createRateLimiter, generateToken, verifyAppwriteToken, mockAuth } = require('./middleware/auth');
+const { authenticateToken, optionalAuth, guestAuth, requireAdmin, createRateLimiter, generateToken, verifyAppwriteToken, mockAuth } = require('./middleware/auth');
 
 const app = express();
 
@@ -436,7 +436,7 @@ app.get('/api/problems/:id', optionalAuth, async (req, res) => {
 // ===== SUBMISSIONS ENDPOINTS =====
 
 // Submit solution
-app.post('/api/submissions', mockAuth, async (req, res) => {
+app.post('/api/submissions', guestAuth, async (req, res) => {
   try {
     const { problemId, code, language } = req.body;
     
@@ -457,8 +457,10 @@ app.post('/api/submissions', mockAuth, async (req, res) => {
       req.user._id
     );
     
-    // Update user stats
-    await req.user.updateStats(result);
+    // Update user stats (only for authenticated users)
+    if (req.user.role !== 'guest') {
+      await req.user.updateStats(result);
+    }
     
     // Cache result in Redis
     if (redis.status === 'ready') {
@@ -487,13 +489,26 @@ app.post('/api/submissions', mockAuth, async (req, res) => {
 });
 
 // Get user submissions
-app.get('/api/submissions', mockAuth, async (req, res) => {
+app.get('/api/submissions', guestAuth, async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     
     // This would typically come from a Submission model
     // For now, return cached submissions
     let submissions = [];
+    
+    // Guest users don't have persistent submissions
+    if (req.user.role === 'guest') {
+      return res.json({
+        submissions: [],
+        pagination: {
+          page: page * 1,
+          limit: limit * 1,
+          total: 0,
+          pages: 0
+        }
+      });
+    }
     
     if (redis.status === 'ready') {
       const keys = await redis.keys(`submission:${req.user._id}:*`);
@@ -523,9 +538,17 @@ app.get('/api/submissions', mockAuth, async (req, res) => {
 // ===== AI ENDPOINTS =====
 
 // AI Review
-app.post('/api/ai/review', mockAuth, async (req, res) => {
+app.post('/api/ai/review', guestAuth, async (req, res) => {
   try {
     const { question, problemTitle, code, language } = req.body;
+    
+    // Block AI access for guest users
+    if (req.user.role === 'guest') {
+      return res.status(403).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to access AI features'
+      });
+    }
     
     if (!aiService.isAvailable()) {
       return res.status(503).json({ 
@@ -558,9 +581,17 @@ app.post('/api/ai/review', mockAuth, async (req, res) => {
 });
 
 // AI Hints
-app.post('/api/ai/hints', mockAuth, async (req, res) => {
+app.post('/api/ai/hints', guestAuth, async (req, res) => {
   try {
     const { problemTitle, hintLevel = 1 } = req.body;
+    
+    // Block AI access for guest users
+    if (req.user.role === 'guest') {
+      return res.status(403).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to access AI features'
+      });
+    }
     
     if (!aiService.isAvailable()) {
       return res.status(503).json({ 
@@ -576,9 +607,17 @@ app.post('/api/ai/hints', mockAuth, async (req, res) => {
 });
 
 // AI Learning Path
-app.post('/api/ai/learning-path', mockAuth, async (req, res) => {
+app.post('/api/ai/learning-path', guestAuth, async (req, res) => {
   try {
     const { currentLevel, goals } = req.body;
+    
+    // Block AI access for guest users
+    if (req.user.role === 'guest') {
+      return res.status(403).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to access AI features'
+      });
+    }
     
     if (!aiService.isAvailable()) {
       return res.status(503).json({ 
