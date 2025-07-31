@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CodeRunner from './pages/CodeRunner';
+import CodeEditorTest from './pages/CodeEditorTest';
 import Problems from './pages/Problems';
 import ProblemDetail from './pages/ProblemDetail';
 import Status from './pages/Status';
@@ -36,6 +37,7 @@ function AppRoutes() {
             </ProtectedRoute>
           } />
           <Route path="/code-runner" element={<CodeRunner />} />
+          <Route path="/code-editor-test" element={<CodeEditorTest />} />
           <Route path="/problems" element={<Problems />} />
           <Route path="/problems/:id" element={<ProblemDetail />} />
           <Route path="/status" element={<Status />} />

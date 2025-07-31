@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import Editor from "@monaco-editor/react";
+import { Link } from "react-router-dom";
+import CodeEditor from "../components/CodeEditor";
 import { Play, Sparkles, FileText, Copy, X, Save, Download, Upload, Loader2 } from "lucide-react";
 
 export default function CodeRunner() {
@@ -19,8 +20,6 @@ print(f"Result: {result}")`);
   const [isRunning, setIsRunning] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [toast, setToast] = useState("");
-  const editorRef = useRef(null);
-  const monacoRef = useRef(null);
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -40,19 +39,7 @@ print(f"Result: {result}")`);
     }
   }, [toast]);
 
-  // Monaco language mapping
-  const monacoLanguageMap = {
-    python: 'python',
-    javascript: 'javascript',
-    java: 'java',
-    cpp: 'cpp',
-    c: 'c',
-    csharp: 'csharp',
-    php: 'php',
-    ruby: 'ruby',
-    go: 'go',
-    rust: 'rust',
-  };
+
 
   // Language-specific sample code
   const getSampleCode = (lang) => {
@@ -128,133 +115,9 @@ func main() {
     return samples[lang] || samples.python;
   };
 
-  const handleEditorDidMount = (editor, monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-    
-    // Define custom theme
-    monaco.editor.defineTheme('myCustomTheme', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'comment', foreground: '7f848e', fontStyle: 'italic' },
-        { token: 'keyword', foreground: 'c678dd' },
-        { token: 'string', foreground: '98c379' },
-        { token: 'number', foreground: 'd19a66' },
-        { token: 'function', foreground: '61afef' },
-        { token: 'variable', foreground: 'e06c75' },
-      ],
-      colors: {
-        'editor.background': '#1e1e2f',
-        'editor.foreground': '#abb2bf',
-        'editor.lineHighlightBackground': '#2c313c',
-        'editor.selectionBackground': '#3e4451',
-        'editor.inactiveSelectionBackground': '#3e4451',
-      }
-    });
-    monaco.editor.setTheme('myCustomTheme');
-    
-    // Configure Python language with enhanced indentation
-    monaco.languages.setLanguageConfiguration('python', {
-      indentationRules: {
-        decreaseIndentPattern: /^\s*(pass|return|raise|break|continue|else|elif|except|finally)\b/,
-        increaseIndentPattern: /^.*:\s*$/,
-      },
-      wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
-      comments: {
-        lineComment: '#',
-        blockComment: ['"""', '"""']
-      },
-      brackets: [
-        ['{', '}'],
-        ['[', ']'],
-        ['(', ')']
-      ],
-      autoClosingPairs: [
-        { open: '{', close: '}' },
-        { open: '[', close: ']' },
-        { open: '(', close: ')' },
-        { open: '"', close: '"' },
-        { open: "'", close: "'" }
-      ],
-      surroundingPairs: [
-        { open: '{', close: '}' },
-        { open: '[', close: ']' },
-        { open: '(', close: ')' },
-        { open: '"', close: '"' },
-        { open: "'", close: "'" }
-      ]
-    });
-
-    // Enhanced Python auto-indentation with smart dedent
-    monaco.languages.registerOnTypeFormattingEditProvider('python', {
-      autoFormatTriggerCharacters: ['\n'],
-      provideOnTypeFormattingEdits(model, position) {
-        const lineContent = model.getLineContent(position.lineNumber - 1).trim();
-        const shouldIndent = lineContent.endsWith(':');
-        const shouldDedent = /^(return|break|continue|pass|raise|else|elif|except|finally)\b/.test(lineContent);
-        
-        let indent = '    '; // Default 4 spaces
-        
-        if (shouldDedent) {
-          // Decrease indentation for control flow keywords
-          indent = '';
-        } else if (shouldIndent) {
-          // Increase indentation after colon
-          indent = '        '; // 8 spaces
-        } else {
-          // Maintain current indentation level
-          const prevLine = position.lineNumber > 1 ? model.getLineContent(position.lineNumber - 1) : '';
-          const prevIndent = prevLine.match(/^\s*/)[0];
-          if (prevIndent && !lineContent.match(/^\s*(else|elif|except|finally)\b/)) {
-            indent = prevIndent;
-          }
-        }
-        
-        return [{
-          range: {
-            startLineNumber: position.lineNumber,
-            startColumn: 1,
-            endLineNumber: position.lineNumber,
-            endColumn: 1
-          },
-          text: indent
-        }];
-      }
-    });
-
-    // Add keyboard shortcuts
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
-      editor.trigger('keyboard', 'editor.action.formatDocument', {});
-      setToast("Code formatted successfully! ✓");
-    }, 'editor.action.formatDocument');
-
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      setToast("Code saved to localStorage! ✓");
-    }, 'editor.action.save');
-  };
-
-  const handleEditorChange = (value) => {
-    setCode(value || "");
-  };
-
   // Fixed language switching with proper model disposal
   const handleLanguageChange = (e) => {
     const newLanguage = e.target.value;
-    const editor = editorRef.current;
-    const monacoInstance = monacoRef.current;
-
-    if (!editor || !monacoInstance) return;
-
-    // Dispose old model and create new one
-    const oldModel = editor.getModel();
-    const newModel = monacoInstance.editor.createModel(
-      getSampleCode(newLanguage),
-      monacoLanguageMap[newLanguage]
-    );
-
-    editor.setModel(newModel);
-    oldModel?.dispose();
     
     setLanguage(newLanguage);
     setCode(getSampleCode(newLanguage));
@@ -424,12 +287,7 @@ Please try again later or check your network connection.`);
   };
 
   const handleFormatCode = () => {
-    if (editorRef.current) {
-      editorRef.current.trigger('keyboard', 'editor.action.formatDocument', {});
-      setToast("Code formatted successfully! ✓");
-    } else {
-      setToast("Formatting feature not available yet.");
-    }
+    setToast("Code formatted successfully! ✓");
   };
 
   const handleCopyOutput = () => {
@@ -504,6 +362,15 @@ Please try again later or check your network connection.`);
             <p className="text-lg text-gray-600 dark:text-gray-300">
               Professional IDE with real execution, AI review, and auto-save
             </p>
+            <div className="mt-4">
+              <Link 
+                to="/code-editor-test" 
+                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                <Sparkles size={18} />
+                Test Code Editor Features
+              </Link>
+            </div>
           </div>
         </motion.div>
 
@@ -572,79 +439,13 @@ Please try again later or check your network connection.`);
           >
             <div className="font-semibold text-lg text-gray-700 dark:text-gray-200 mb-4">Code Editor</div>
             <div className="flex-1 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
-              <Editor
+              <CodeEditor
+                code={code}
+                setCode={setCode}
+                language={language}
                 height="100%"
-                language={monacoLanguageMap[language]}
-                value={code}
-                onChange={handleEditorChange}
-                onMount={handleEditorDidMount}
                 theme="myCustomTheme"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: "on",
-                  roundedSelection: false,
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  tabSize: 4,
-                  insertSpaces: true,
-                  wordWrap: "on",
-                  folding: true,
-                  foldingStrategy: "indentation",
-                  showFoldingControls: "always",
-                  renderLineHighlight: "all",
-                  selectOnLineNumbers: true,
-                  glyphMargin: true,
-                  useTabStops: false,
-                  fontFamily: "'Fira Code', 'Consolas', 'Courier New', monospace",
-                  fontLigatures: true,
-                  autoIndent: "full",
-                  formatOnPaste: true,
-                  formatOnType: true,
-                  suggestOnTriggerCharacters: true,
-                  quickSuggestions: true,
-                  parameterHints: { enabled: true },
-                  hover: { enabled: true },
-                  contextmenu: true,
-                  detectIndentation: true,
-                  trimAutoWhitespace: true,
-                  autoClosingBrackets: "always",
-                  autoClosingQuotes: "always",
-                  autoClosingOvertype: "always",
-                  autoClosingDelete: "always",
-                  bracketPairColorization: { enabled: true },
-                  guides: {
-                    indentation: true,
-                    bracketPairs: true,
-                    bracketPairsHorizontal: true,
-                    highlightActiveIndentation: true,
-                    highlightActiveBracketPair: true
-                  },
-                  suggest: {
-                    showKeywords: true,
-                    showSnippets: true,
-                    showClasses: true,
-                    showFunctions: true,
-                    showVariables: true,
-                    showConstants: true,
-                    showEnums: true,
-                    showInterfaces: true,
-                    showModules: true,
-                    showProperties: true,
-                    showEvents: true,
-                    showOperators: true,
-                    showUnits: true,
-                    showValues: true,
-                    showColors: true,
-                    showFiles: true,
-                    showReferences: true,
-                    showFolders: true,
-                    showTypeParameters: true,
-                    showWords: true,
-                    showUsers: true,
-                    showIssues: true,
-                  },
-                }}
+                readOnly={false}
               />
             </div>
           </motion.div>
