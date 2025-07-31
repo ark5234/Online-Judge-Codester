@@ -11,7 +11,7 @@ const navLinks = [
   { name: "Ranks", to: "/ranks" },
   { name: "Discuss", to: "/discuss" },
   { name: "Contests", to: "/contests" },
-  { name: "Code Test", to: "/code-editor-test" },
+  { name: "Code Runner", to: "/code-runner" },
 ];
 
 export default function Navbar() {

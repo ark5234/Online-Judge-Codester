@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { Play, Sparkles, FileText, Copy, X, Save, Download, Upload, Loader2 } from "lucide-react";
 
@@ -197,7 +196,7 @@ func main() {
 
   const handleAIReview = async () => {
     setIsReviewing(true);
-    setReview("Analyzing code...");
+    setReview("🤖 Hello! I'm your AI coding assistant. Let me analyze your code...");
     
     try {
       // Real AI review integration
@@ -223,59 +222,100 @@ func main() {
           throw new Error('AI review request failed');
         }
       } else {
-        // Simulate AI review API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Simulate conversational AI review
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setReview("🤖 Hello! I'm your AI coding assistant. Let me analyze your code...\n\n🔍 Scanning your code structure...");
+        
+        await new Promise(resolve => setTimeout(resolve, 600));
+        setReview(prev => prev + "\n\n✅ **Code Structure Analysis:**\nI can see you're working with " + language + ". Your code has a good foundation!");
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setReview(prev => prev + "\n\n💡 **Suggestions for Improvement:**");
+        
+        await new Promise(resolve => setTimeout(resolve, 400));
         
         const reviews = {
-          python: `# AI Review: Excellent Python Code! 🤖
+          python: `🤖 Hello! I'm your AI coding assistant. Let me analyze your code...
 
-## Strengths
-- ✅ Proper indentation and PEP 8 compliance
-- ✅ Good function structure and naming
-- ✅ Clear variable names and logic flow
-- ✅ Appropriate use of print statements
+🔍 Scanning your code structure...
 
-## Suggestions
-- 🔧 Consider adding docstrings for functions
-- 🔧 Add type hints for better code documentation
-- 🔧 Include error handling with try-except blocks
-- 🔧 Consider using f-strings for string formatting
+✅ **Code Structure Analysis:**
+I can see you're working with Python. Your code has a good foundation!
 
-**Overall**: Great job! Your code follows Python best practices.`,
-          javascript: `# AI Review: Well-structured JavaScript Code! 🤖
+💡 **Suggestions for Improvement:**
 
-## Strengths
-- ✅ Proper function declaration and syntax
-- ✅ Good use of console.log for output
-- ✅ Clear variable naming conventions
-- ✅ Appropriate return statements
+🎯 **What I noticed:**
+• Your function structure looks clean and readable
+• Good use of Python conventions
+• Clear variable naming
 
-## Suggestions
-- 🔧 Consider using ES6+ features like arrow functions
-- 🔧 Add JSDoc comments for documentation
-- 🔧 Include error handling with try-catch
-- 🔧 Consider using template literals for string interpolation
+🚀 **Quick improvements you could make:**
+• Add docstrings to explain what your function does
+• Consider using type hints for better documentation
+• Maybe add some error handling with try-except blocks
+• F-strings are great for string formatting in Python!
 
-**Overall**: Solid JavaScript implementation!`,
-          default: `# AI Review: Good Code Structure! 🤖
+💭 **My thoughts:**
+Overall, this is solid Python code! You're following good practices. The main thing is just adding some documentation to make it even more professional.
 
-## Strengths
-- ✅ Proper syntax and formatting
-- ✅ Clear logic flow
-- ✅ Appropriate output statements
+Keep up the great work! 🎉`,
+          
+          javascript: `🤖 Hello! I'm your AI coding assistant. Let me analyze your code...
 
-## Suggestions
-- 🔧 Add comments for complex logic
-- 🔧 Consider error handling
-- 🔧 Include input validation where needed
+🔍 Scanning your code structure...
 
-**Overall**: Well-written code!`
+✅ **Code Structure Analysis:**
+I can see you're working with JavaScript. Your code has a good foundation!
+
+💡 **Suggestions for Improvement:**
+
+🎯 **What I noticed:**
+• Your function declarations are clear and well-structured
+• Good use of console.log for debugging
+• Clean variable naming conventions
+
+🚀 **Quick improvements you could make:**
+• Consider using ES6+ features like arrow functions
+• Add JSDoc comments to document your functions
+• Maybe include some error handling with try-catch
+• Template literals are awesome for string interpolation!
+
+💭 **My thoughts:**
+This is well-written JavaScript! You're following modern practices. Just a few small tweaks would make it even better.
+
+Great job! 🎉`,
+          
+          default: `🤖 Hello! I'm your AI coding assistant. Let me analyze your code...
+
+🔍 Scanning your code structure...
+
+✅ **Code Structure Analysis:**
+I can see you're working with ${language}. Your code has a good foundation!
+
+💡 **Suggestions for Improvement:**
+
+🎯 **What I noticed:**
+• Your code structure is clean and readable
+• Good use of language conventions
+• Clear logic flow
+
+🚀 **Quick improvements you could make:**
+• Add comments to explain complex logic
+• Consider adding error handling
+• Maybe include some input validation where needed
+
+💭 **My thoughts:**
+Overall, this is well-written code! You're following good practices. Just a few small improvements would make it even better.
+
+Keep up the great work! 🎉`
         };
         
         setReview(reviews[language] || reviews.default);
       }
     } catch (error) {
-      setReview(`# AI Review Error 🤖
+      setReview(`🤖 **AI Review Error**
+
+😔 Sorry, I encountered an issue while analyzing your code.
 
 **Error**: ${error.message}
 
@@ -357,20 +397,12 @@ Please try again later or check your network connection.`);
         >
           <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 sm:p-8 text-center">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              AlgoU Online Code Compiler
+              Online Code Compiler
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300">
               Professional IDE with real execution, AI review, and auto-save
             </p>
-            <div className="mt-4">
-              <Link 
-                to="/code-editor-test" 
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
-              >
-                <Sparkles size={18} />
-                Test Code Editor Features
-              </Link>
-            </div>
+
           </div>
         </motion.div>
 
@@ -534,7 +566,7 @@ Please try again later or check your network connection.`);
                   </button>
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap max-h-[120px] overflow-y-auto prose prose-sm">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap max-h-[200px] overflow-y-auto prose prose-sm">
                 {isReviewing ? (
                   <div className="flex items-center gap-2 text-green-600">
                     <Loader2 size={16} className="animate-spin" />
