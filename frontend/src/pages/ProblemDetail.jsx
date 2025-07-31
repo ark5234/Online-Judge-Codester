@@ -359,47 +359,204 @@ export default function ProblemDetail() {
     
     const templates = {
       javascript: `/**
- * @param {${paramTypes.join(', ')}}
- * @return {${returnType}}
+ * ${prob.title}
+ * 
+ * Problem: ${prob.description?.substring(0, 100)}${prob.description?.length > 100 ? '...' : ''}
+ * 
+ * @param {${paramTypes.join(', ')}} - Input parameters
+ * @return {${returnType}} - Expected output
+ * 
+ * Time Complexity: O(n) - Adjust based on your solution
+ * Space Complexity: O(1) - Adjust based on your solution
  */
-var ${functionName} = function(${paramTypes.map((_, i) => `param${i + 1}`).join(', ')}) {
-    // Your solution here
+const ${functionName} = function(${paramTypes.map((type, i) => {
+  // Generate meaningful parameter names based on type
+  const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+  return paramNames[i] || `param${i + 1}`;
+}).join(', ')}) {
+    // TODO: Implement your solution here
     
+    // Example approach:
+    // 1. Initialize variables
+    // 2. Process the input
+    // 3. Return the result
+    
+    return ${returnType === 'number[]' ? '[]' : returnType === 'number' ? '0' : '""'};
 };
 
 // Test cases
+console.log('=== Test Cases ===');
 ${prob.examples ? prob.examples.map((example, i) => 
-  `console.log(${functionName}(${example.input})); // Expected: ${example.output}`
-).join('\n') : `console.log(${functionName}([1, 2, 3])); // Add your test cases`}
-`,
-      python: `def ${functionName}(${paramTypes.map((_, i) => `param${i + 1}`).join(', ')}):
-    """
-    :type ${paramTypes.map((_, i) => `param${i + 1}: ${paramTypes[i]}`).join(', ')}
-    :rtype: ${returnType}
-    """
-    # Your solution here
-    pass
+  `console.log('Test ${i + 1}:', ${functionName}(${example.input})); // Expected: ${example.output}`
+).join('\n') : `console.log('Test 1:', ${functionName}([1, 2, 3])); // Add your test cases`}
+console.log('=== End Tests ===');`,
+      
+      python: `"""
+${prob.title}
 
-# Test cases
-${prob.examples ? prob.examples.map((example, i) => 
-  `print(${functionName}(${example.input}))  # Expected: ${example.output}`
-).join('\n') : `print(${functionName}([1, 2, 3]))  # Add your test cases`}
-`,
-      java: `class Solution {
-    public ${returnType} ${functionName}(${paramTypes.map((type, i) => `${type} param${i + 1}`).join(', ')}) {
-        // Your solution here
+Problem: ${prob.description?.substring(0, 100)}${prob.description?.length > 100 ? '...' : ''}
+
+Time Complexity: O(n) - Adjust based on your solution
+Space Complexity: O(1) - Adjust based on your solution
+"""
+
+def ${functionName}(${paramTypes.map((type, i) => {
+  // Generate meaningful parameter names based on type
+  const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+  return paramNames[i] || `param${i + 1}`;
+}).join(', ')}):
+    """
+    ${prob.description?.substring(0, 200)}${prob.description?.length > 200 ? '...' : ''}
+    
+    Args:
+        ${paramTypes.map((type, i) => {
+          const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+          const paramName = paramNames[i] || `param${i + 1}`;
+          return `${paramName} (${type}): Description`;
+        }).join('\n        ')}
+    
+    Returns:
+        ${returnType}: Expected output
+    
+    Example:
+        >>> ${functionName}(${prob.examples?.[0]?.input || '[1, 2, 3]'})
+        ${prob.examples?.[0]?.output || '[0, 1]'}
+    """
+    # TODO: Implement your solution here
+    
+    # Example approach:
+    # 1. Initialize variables
+    # 2. Process the input
+    # 3. Return the result
+    
+    return ${returnType === 'number[]' ? '[]' : returnType === 'number' ? '0' : '""'}
+
+
+def run_tests():
+    """Run test cases to verify the solution."""
+    print("=== Test Cases ===")
+    ${prob.examples ? prob.examples.map((example, i) => 
+      `print(f"Test ${i + 1}: {${functionName}(${example.input})}")  # Expected: ${example.output}`
+    ).join('\n    ') : `print(f"Test 1: {${functionName}([1, 2, 3])}")  # Add your test cases`}
+    print("=== End Tests ===")
+
+
+if __name__ == "__main__":
+    run_tests()`,
+      
+      java: `/**
+ * ${prob.title}
+ * 
+ * Problem: ${prob.description?.substring(0, 100)}${prob.description?.length > 100 ? '...' : ''}
+ * 
+ * Time Complexity: O(n) - Adjust based on your solution
+ * Space Complexity: O(1) - Adjust based on your solution
+ */
+class Solution {
+    /**
+     * ${prob.description?.substring(0, 200)}${prob.description?.length > 200 ? '...' : ''}
+     * 
+     * @param ${paramTypes.map((type, i) => {
+       const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+       const paramName = paramNames[i] || `param${i + 1}`;
+       return `${paramName} ${type}`;
+     }).join(', ')} - Input parameters
+     * @return ${returnType} - Expected output
+     */
+    public ${returnType} ${functionName}(${paramTypes.map((type, i) => {
+      const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+      const paramName = paramNames[i] || `param${i + 1}`;
+      return `${type} ${paramName}`;
+    }).join(', ')}) {
+        // TODO: Implement your solution here
+        
+        // Example approach:
+        // 1. Initialize variables
+        // 2. Process the input
+        // 3. Return the result
+        
         return ${returnType === 'number[]' ? 'new int[]{}' : returnType === 'number' ? '0' : '""'};
     }
 }
 
-// Test cases
+/**
+ * Main class to run test cases
+ */
 public class Main {
     public static void main(String[] args) {
         Solution solution = new Solution();
+        
+        System.out.println("=== Test Cases ===");
         ${prob.examples ? prob.examples.map((example, i) => 
-          `System.out.println(Arrays.toString(solution.${functionName}(${example.input}))); // Expected: ${example.output}`
-        ).join('\n        ') : `System.out.println(Arrays.toString(solution.${functionName}(new int[]{1, 2, 3}))); // Add your test cases`}
+          `System.out.println("Test ${i + 1}: " + Arrays.toString(solution.${functionName}(${example.input}))); // Expected: ${example.output}`
+        ).join('\n        ') : `System.out.println("Test 1: " + Arrays.toString(solution.${functionName}(new int[]{1, 2, 3}))); // Add your test cases`}
+        System.out.println("=== End Tests ===");
     }
+}`,
+      
+      cpp: `/**
+ * ${prob.title}
+ * 
+ * Problem: ${prob.description?.substring(0, 100)}${prob.description?.length > 100 ? '...' : ''}
+ * 
+ * Time Complexity: O(n) - Adjust based on your solution
+ * Space Complexity: O(1) - Adjust based on your solution
+ */
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+class Solution {
+public:
+    /**
+     * ${prob.description?.substring(0, 200)}${prob.description?.length > 200 ? '...' : ''}
+     * 
+     * @param ${paramTypes.map((type, i) => {
+       const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+       const paramName = paramNames[i] || `param${i + 1}`;
+       return paramName;
+     }).join(', ')} - Input parameters
+     * @return ${returnType} - Expected output
+     */
+    ${returnType} ${functionName}(${paramTypes.map((type, i) => {
+      const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
+      const paramName = paramNames[i] || `param${i + 1}`;
+      return `${type} ${paramName}`;
+    }).join(', ')}) {
+        // TODO: Implement your solution here
+        
+        // Example approach:
+        // 1. Initialize variables
+        // 2. Process the input
+        // 3. Return the result
+        
+        return ${returnType === 'number[]' ? '{}' : returnType === 'number' ? '0' : '""'};
+    }
+};
+
+/**
+ * Helper function to print vector
+ */
+void printVector(const vector<int>& vec) {
+    cout << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        cout << vec[i];
+        if (i < vec.size() - 1) cout << ", ";
+    }
+    cout << "]";
+}
+
+int main() {
+    Solution solution;
+    
+    cout << "=== Test Cases ===" << endl;
+    ${prob.examples ? prob.examples.map((example, i) => 
+      `printVector(solution.${functionName}(${example.input})); cout << " // Expected: ${example.output}" << endl;`
+    ).join('\n    ') : `printVector(solution.${functionName}({1, 2, 3})); cout << " // Add your test cases" << endl;`}
+    cout << "=== End Tests ===" << endl;
+    
+    return 0;
 }`
     };
     

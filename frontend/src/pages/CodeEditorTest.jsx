@@ -462,88 +462,107 @@ fn main() {
 
   const handleAiReview = async () => {
     setIsAiLoading(true);
-    setAiReview("Analyzing code...");
+    setAiReview("🤖 Hello! I'm your AI coding assistant. Let me analyze your code...");
     setShowAiReview(true);
     
     try {
-      // Mock AI review for testing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate conversational AI review
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setAiReview("🤖 Hello! I'm your AI coding assistant. Let me analyze your code...\n\n🔍 Scanning your code structure...");
+      
+      await new Promise(resolve => setTimeout(resolve, 600));
+      setAiReview(prev => prev + "\n\n✅ **Code Structure Analysis:**\nI can see you're working with " + language + ". Your code has a good foundation!");
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setAiReview(prev => prev + "\n\n💡 **Suggestions for Improvement:**");
+      
+      await new Promise(resolve => setTimeout(resolve, 400));
       
       const reviews = {
-        python: `# AI Code Review 🤖
+        python: `🤖 Hello! I'm your AI coding assistant. Let me analyze your code...
 
-## Strengths
-- ✅ Good function structure and naming
-- ✅ Proper docstring format
-- ✅ Clear parameter naming
+🔍 Scanning your code structure...
 
-## Suggestions
-- 🔧 Implement the actual solution logic
-- 🔧 Add error handling for edge cases
-- 🔧 Consider time complexity optimization
-- 🔧 Add type hints for better code documentation
+✅ **Code Structure Analysis:**
+I can see you're working with Python. Your code has a good foundation!
 
-## Example Solution
-```python
-def twosum(nums, target):
-    seen = {}
-    for i, num in enumerate(nums):
-        complement = target - num
-        if complement in seen:
-            return [seen[complement], i]
-        seen[num] = i
-    return []
-```
+💡 **Suggestions for Improvement:**
 
-**Overall**: Good foundation, needs implementation!`,
-        javascript: `# AI Code Review 🤖
+🎯 **What I noticed:**
+• Your function structure looks clean and readable
+• Good use of Python conventions
+• Clear variable naming
 
-## Strengths
-- ✅ Good function structure
-- ✅ Proper JSDoc comments
-- ✅ Clear parameter naming
+🚀 **Quick improvements you could make:**
+• Add docstrings to explain what your function does
+• Consider using type hints for better documentation
+• Maybe add some error handling with try-except blocks
+• F-strings are great for string formatting in Python!
 
-## Suggestions
-- 🔧 Implement the actual solution logic
-- 🔧 Add error handling for edge cases
-- 🔧 Consider time complexity optimization
-- 🔧 Use ES6+ features for cleaner code
+💭 **My thoughts:**
+Overall, this is solid Python code! You're following good practices. The main thing is just adding some documentation to make it even more professional.
 
-## Example Solution
-```javascript
-var twosum = function(nums, target) {
-    const seen = new Map();
-    for (let i = 0; i < nums.length; i++) {
-        const complement = target - nums[i];
-        if (seen.has(complement)) {
-            return [seen.get(complement), i];
-        }
-        seen.set(nums[i], i);
-    }
-    return [];
-};
-```
+Keep up the great work! 🎉`,
+        
+        javascript: `🤖 Hello! I'm your AI coding assistant. Let me analyze your code...
 
-**Overall**: Good foundation, needs implementation!`,
-        default: `# AI Code Review 🤖
+🔍 Scanning your code structure...
 
-## Strengths
-- ✅ Good code structure
-- ✅ Clear function naming
-- ✅ Proper documentation
+✅ **Code Structure Analysis:**
+I can see you're working with JavaScript. Your code has a good foundation!
 
-## Suggestions
-- 🔧 Implement the actual solution logic
-- 🔧 Add error handling
-- 🔧 Consider optimization
-- 🔧 Add more test cases
+💡 **Suggestions for Improvement:**
 
-**Overall**: Good foundation, needs implementation!`
+🎯 **What I noticed:**
+• Your function declarations are clear and well-structured
+• Good use of console.log for debugging
+• Clean variable naming conventions
+
+🚀 **Quick improvements you could make:**
+• Consider using ES6+ features like arrow functions
+• Add JSDoc comments to document your functions
+• Maybe include some error handling with try-catch
+• Template literals are awesome for string interpolation!
+
+💭 **My thoughts:**
+This is well-written JavaScript! You're following modern practices. Just a few small tweaks would make it even better.
+
+Great job! 🎉`,
+        
+        default: `🤖 Hello! I'm your AI coding assistant. Let me analyze your code...
+
+🔍 Scanning your code structure...
+
+✅ **Code Structure Analysis:**
+I can see you're working with ${language}. Your code has a good foundation!
+
+💡 **Suggestions for Improvement:**
+
+🎯 **What I noticed:**
+• Your code structure is clean and readable
+• Good use of language conventions
+• Clear logic flow
+
+🚀 **Quick improvements you could make:**
+• Add comments to explain complex logic
+• Consider adding error handling
+• Maybe include some input validation where needed
+
+💭 **My thoughts:**
+Overall, this is well-written code! You're following good practices. Just a few small improvements would make it even better.
+
+Keep up the great work! 🎉`
       };
       
       setAiReview(reviews[language] || reviews.default);
     } catch (error) {
-      setAiReview(`# AI Review Error 🤖\n\n**Error**: ${error.message}\n\nPlease try again later.`);
+      setAiReview(`🤖 **AI Review Error**
+
+😔 Sorry, I encountered an issue while analyzing your code.
+
+**Error**: ${error.message}
+
+Please try again later.`);
     } finally {
       setIsAiLoading(false);
       setToast("AI review completed! ✓");
