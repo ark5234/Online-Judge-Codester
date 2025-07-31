@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft } from 'react-icons/fi';
+import Editor from "@monaco-editor/react";
 
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -36,6 +37,8 @@ export default function ProblemDetail() {
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiSection, setShowAiSection] = useState(false);
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
 
   // Fetch problem data from API
   useEffect(() => {
@@ -69,6 +72,242 @@ export default function ProblemDetail() {
       setDefaultCode(language, problem);
     }
   }, [problem, language]);
+
+  // Monaco Editor configuration
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // Define custom theme
+    monaco.editor.defineTheme('myCustomTheme', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '6A9955' },
+        { token: 'keyword', foreground: 'C586C0' },
+        { token: 'string', foreground: 'CE9178' },
+        { token: 'number', foreground: 'B5CEA8' },
+        { token: 'function', foreground: 'DCDCAA' },
+        { token: 'variable', foreground: '9CDCFE' },
+        { token: 'type', foreground: '4EC9B0' },
+      ],
+      colors: {
+        'editor.foreground': '#D4D4D4',
+        'editor.background': '#1E1E1E',
+        'editorCursor.foreground': '#AEAFAD',
+        'editor.lineHighlightBackground': '#2A2D2E',
+        'editorLineNumber.activeForeground': '#C6C6C6',
+        'editorLineNumber.foreground': '#858585',
+        'editor.selectionBackground': '#264F78',
+        'editor.inactiveSelectionBackground': '#3A3D41',
+      }
+    });
+
+    monaco.editor.setTheme('myCustomTheme');
+
+    // Configure Python language
+    monaco.languages.setLanguageConfiguration('python', {
+      indentationRules: {
+        decreaseIndentPattern: /^(pass|return|raise|break|continue|else|elif|except|finally)$/,
+        increaseIndentPattern: /^.*:\s*$/,
+      },
+      wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/,
+      comments: {
+        lineComment: '#',
+        blockComment: ['"""', '"""']
+      },
+      brackets: [
+        ['{', '}'],
+        ['[', ']'],
+        ['(', ')']
+      ],
+      autoClosingPairs: [
+        { open: '{', close: '}' },
+        { open: '[', close: ']' },
+        { open: '(', close: ')' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" }
+      ],
+      surroundingPairs: [
+        { open: '{', close: '}' },
+        { open: '[', close: ']' },
+        { open: '(', close: ')' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" }
+      ]
+    });
+
+    // Register auto-indentation provider for Python
+    monaco.languages.registerOnTypeFormattingEditProvider('python', {
+      provideOnTypeFormattingEdits(model, position) {
+        const text = model.getValue();
+        const lines = text.split('\n');
+        const currentLine = lines[position.lineNumber - 1];
+        const previousLine = lines[position.lineNumber - 2] || '';
+
+        // Auto-indent after colon
+        if (currentLine.trim() === '' && previousLine.trim().endsWith(':')) {
+          const indent = '    ';
+          return [{
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: 1,
+              endLineNumber: position.lineNumber,
+              endColumn: 1
+            },
+            text: indent
+          }];
+        }
+
+        return [];
+      }
+    });
+
+    // Register completion provider for Python
+    monaco.languages.registerCompletionItemProvider('python', {
+      provideCompletionItems(model, position) {
+        const suggestions = [
+          {
+            label: 'print',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'print(${1:value})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Print a value to the console'
+          },
+          {
+            label: 'def',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'def ${1:function_name}(${2:parameters}):\n\t${3:pass}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Define a function'
+          },
+          {
+            label: 'if',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'if ${1:condition}:\n\t${2:pass}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'If statement'
+          },
+          {
+            label: 'for',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'For loop'
+          },
+          {
+            label: 'while',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'while ${1:condition}:\n\t${2:pass}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'While loop'
+          },
+          {
+            label: 'try',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'try:\n\t${1:pass}\nexcept ${2:Exception} as ${3:e}:\n\t${4:pass}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Try-except block'
+          },
+          {
+            label: 'class',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'class ${1:ClassName}:\n\t${2:pass}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Define a class'
+          },
+          {
+            label: 'import',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'import ${1:module}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Import a module'
+          },
+          {
+            label: 'return',
+            kind: monaco.languages.CompletionItemKind.Keyword,
+            insertText: 'return ${1:value}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Return a value'
+          },
+          {
+            label: 'len',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'len(${1:object})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Get the length of an object'
+          },
+          {
+            label: 'range',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'range(${1:start}, ${2:stop}, ${3:step})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Create a range of numbers'
+          },
+          {
+            label: 'list',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'list(${1:iterable})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Create a list'
+          },
+          {
+            label: 'dict',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'dict(${1:iterable})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Create a dictionary'
+          },
+          {
+            label: 'set',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'set(${1:iterable})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Create a set'
+          },
+          {
+            label: 'str',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'str(${1:object})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Convert to string'
+          },
+          {
+            label: 'int',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'int(${1:object})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Convert to integer'
+          },
+          {
+            label: 'float',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'float(${1:object})',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            documentation: 'Convert to float'
+          }
+        ];
+
+        return { suggestions };
+      }
+    });
+
+    // Add keyboard shortcuts
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
+      editor.getAction('editor.action.formatDocument').run();
+    });
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      // Auto-save functionality
+      console.log('Code saved automatically');
+    });
+
+    editor.focus();
+  };
+
+  const handleEditorChange = (value) => {
+    setCode(value || '');
+  };
 
   const setDefaultCode = (lang, prob) => {
     // Generate function name from problem title
@@ -449,13 +688,93 @@ public class Main {
               )}
               
               <div className="p-4 sm:p-6">
-                <textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-64 sm:h-80 p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Write your solution here..."
-                  spellCheck="false"
-                />
+                <div className="h-64 sm:h-80 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
+                  <Editor
+                    height="100%"
+                    defaultLanguage={language}
+                    value={code}
+                    onChange={handleEditorChange}
+                    onMount={handleEditorDidMount}
+                    theme="myCustomTheme"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      lineNumbers: "on",
+                      roundedSelection: false,
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 4,
+                      insertSpaces: true,
+                      wordWrap: "on",
+                      fontFamily: "'Fira Code', 'Consolas', 'Courier New', monospace",
+                      fontLigatures: true,
+                      autoIndent: "full",
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      suggestOnTriggerCharacters: true,
+                      quickSuggestions: {
+                        other: true,
+                        comments: true,
+                        strings: true
+                      },
+                      parameterHints: { enabled: true },
+                      hover: { enabled: true },
+                      contextmenu: true,
+                      detectIndentation: true,
+                      trimAutoWhitespace: true,
+                      autoClosingBrackets: "always",
+                      autoClosingQuotes: "always",
+                      autoClosingOvertype: "always",
+                      autoClosingDelete: "always",
+                      bracketPairColorization: { enabled: true },
+                      guides: {
+                        indentation: true,
+                        bracketPairs: true,
+                        bracketPairsHorizontal: true,
+                        highlightActiveIndentation: true,
+                        highlightActiveBracketPair: true
+                      },
+                      suggest: {
+                        showKeywords: true,
+                        showSnippets: true,
+                        showClasses: true,
+                        showFunctions: true,
+                        showVariables: true,
+                        showConstants: true,
+                        showEnums: true,
+                        showInterfaces: true,
+                        showModules: true,
+                        showProperties: true,
+                        showEvents: true,
+                        showOperators: true,
+                        showUnits: true,
+                        showValues: true,
+                        showColors: true,
+                        showFiles: true,
+                        showReferences: true,
+                        showFolders: true,
+                        showTypeParameters: true,
+                        showWords: true,
+                        showUsers: true,
+                        showIssues: true,
+                      },
+                      wordWrapColumn: 80,
+                      wordWrapBreakAfterCharacters: " \t})]?|&,;",
+                      wordWrapBreakBeforeCharacters: "{([+",
+                      wordWrapMinified: true,
+                      wrappingIndent: "none",
+                      wrappingStrategy: "simple",
+                      unicodeHighlight: {
+                        ambiguousCharacters: true,
+                        invisibleCharacters: false,
+                        nonBasicASCII: false
+                      },
+                      unusualLineTerminators: "prompt",
+                      wordSeparators: "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?",
+                      wordBasedSuggestions: "off"
+                    }}
+                  />
+                </div>
                 
                                            <div className="flex flex-col sm:flex-row gap-3 mt-4">
                              <button
