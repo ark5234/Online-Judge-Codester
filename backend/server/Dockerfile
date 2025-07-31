@@ -1,5 +1,6 @@
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
 # Copy package files
@@ -9,13 +10,17 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy source code
-COPY src/ ./src/
+COPY . .
 
-# Create .env file with default values
-RUN echo "MONGO_URI=mongodb://mongo:27017/oj\nREDIS_URL=redis://redis:6379\nJWT_SECRET=your_jwt_secret\nPORT=3001\nNODE_ENV=production" > .env
+# Create necessary directories
+RUN mkdir -p logs
 
 # Expose port
-EXPOSE 3001
+EXPOSE 10000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:10000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
 CMD ["npm", "start"] 
