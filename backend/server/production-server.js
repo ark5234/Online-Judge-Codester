@@ -904,6 +904,62 @@ app.post('/api/ai/learning-path', guestAuth, async (req, res) => {
 app.get('/api/discussions', async (req, res) => {
   try {
     const { page = 1, limit = 10, tag } = req.query;
+    
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      // Return mock data when MongoDB is not connected
+      const mockDiscussions = [
+        {
+          _id: 'mock-discussion-1',
+          title: 'Getting Started with Competitive Programming',
+          content: 'Hello everyone! I\'m new to competitive programming and would love some tips on how to get started. What resources do you recommend for beginners?',
+          author: {
+            _id: 'mock-user-1',
+            name: 'John Doe',
+            email: 'john@example.com',
+            avatar: 'https://via.placeholder.com/40'
+          },
+          authorName: 'John Doe',
+          tags: ['beginner', 'competitive-programming'],
+          likes: [],
+          views: 15,
+          replies: [],
+          isActive: true,
+          createdAt: new Date(Date.now() - 86400000), // 1 day ago
+          updatedAt: new Date(Date.now() - 86400000)
+        },
+        {
+          _id: 'mock-discussion-2',
+          title: 'Best Data Structures for Interview Questions',
+          content: 'I have an upcoming technical interview and want to focus on the most important data structures. Which ones should I prioritize?',
+          author: {
+            _id: 'mock-user-2',
+            name: 'Jane Smith',
+            email: 'jane@example.com',
+            avatar: 'https://via.placeholder.com/40'
+          },
+          authorName: 'Jane Smith',
+          tags: ['interview', 'data-structures'],
+          likes: [],
+          views: 8,
+          replies: [],
+          isActive: true,
+          createdAt: new Date(Date.now() - 172800000), // 2 days ago
+          updatedAt: new Date(Date.now() - 172800000)
+        }
+      ];
+      
+      return res.json({
+        discussions: mockDiscussions,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: mockDiscussions.length,
+          pages: 1
+        }
+      });
+    }
+    
     const skip = (page - 1) * limit;
     
     let query = { isActive: true };
@@ -937,6 +993,45 @@ app.get('/api/discussions', async (req, res) => {
 // Get single discussion
 app.get('/api/discussions/:id', async (req, res) => {
   try {
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      // Return mock data when MongoDB is not connected
+      const mockDiscussion = {
+        _id: req.params.id,
+        title: 'Getting Started with Competitive Programming',
+        content: 'Hello everyone! I\'m new to competitive programming and would love some tips on how to get started. What resources do you recommend for beginners? I\'ve been practicing basic problems but feel like I need a more structured approach.',
+        author: {
+          _id: 'mock-user-1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          avatar: 'https://via.placeholder.com/40'
+        },
+        authorName: 'John Doe',
+        tags: ['beginner', 'competitive-programming'],
+        likes: [],
+        views: 15,
+        replies: [
+          {
+            _id: 'mock-reply-1',
+            content: 'I recommend starting with HackerRank and LeetCode easy problems. Also check out the book "Competitive Programming Handbook".',
+            author: {
+              _id: 'mock-user-2',
+              name: 'Jane Smith',
+              email: 'jane@example.com',
+              avatar: 'https://via.placeholder.com/40'
+            },
+            createdAt: new Date(Date.now() - 43200000), // 12 hours ago
+            updatedAt: new Date(Date.now() - 43200000)
+          }
+        ],
+        isActive: true,
+        createdAt: new Date(Date.now() - 86400000), // 1 day ago
+        updatedAt: new Date(Date.now() - 86400000)
+      };
+      
+      return res.json({ discussion: mockDiscussion });
+    }
+    
     const discussion = await Discussion.findById(req.params.id)
       .populate('author', 'name email avatar')
       .populate('replies.author', 'name email avatar');
