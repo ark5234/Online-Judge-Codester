@@ -137,6 +137,37 @@ app.get('/api/test-mongo-alt', async (req, res) => {
   }
 });
 
+// Test MongoDB with direct connection (no DNS resolution)
+app.get('/api/test-mongo-direct', async (req, res) => {
+  try {
+    console.log('Testing MongoDB with direct connection');
+    
+    // Try direct connection without DNS resolution
+    const directUri = 'mongodb://vikrantkawadkar2099:oj_data%402099@cluster0-shard-00-00.8ndl519.mongodb.net:27017,cluster0-shard-00-01.8ndl519.mongodb.net:27017,cluster0-shard-00-02.8ndl519.mongodb.net:27017/codester?ssl=true&replicaSet=atlas-xxxxx&authSource=admin&retryWrites=true&w=majority';
+    
+    await mongoose.connect(directUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+    });
+    
+    console.log('✅ MongoDB direct connection successful');
+    
+    res.json({
+      success: true,
+      message: 'MongoDB direct connection successful',
+      readyState: mongoose.connection.readyState
+    });
+  } catch (error) {
+    console.error('❌ MongoDB direct connection error:', error.message);
+    res.json({
+      success: false,
+      error: error.message,
+      readyState: mongoose.connection.readyState
+    });
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   const compilerHealth = await evaluationService.checkCompilerHealth();
   
