@@ -68,6 +68,19 @@ app.get('/', (req, res) => {
   });
 });
 
+// Debug endpoint to check environment variables
+app.get('/api/debug', (req, res) => {
+  res.json({
+    environment: process.env.NODE_ENV,
+    mongoUri: process.env.MONGO_URI ? 'Set' : 'Not Set',
+    redisUrl: process.env.REDIS_URL ? 'Set' : 'Not Set',
+    mongoConnection: mongoose.connection.readyState === 1 ? 'Connected' : 'Not Connected',
+    redisConnection: redis.status === 'ready' ? 'Connected' : 'Not Connected',
+    redisStatus: redis.status,
+    mongoReadyState: mongoose.connection.readyState
+  });
+});
+
 app.get('/api/health', async (req, res) => {
   const compilerHealth = await evaluationService.checkCompilerHealth();
   
