@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiCode, FiFilter, FiSearch, FiLoader } from "react-icons/fi";
+import { apiService } from "../services/appwrite";
 
 const getDifficultyTag = (difficulty) => {
   const colors = {
@@ -24,13 +25,7 @@ export default function Problems() {
     const fetchProblems = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3001/api/problems');
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch problems: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await apiService.getProblems();
         setProblems(data.problems || data);
       } catch (error) {
         console.error('Error fetching problems:', error);

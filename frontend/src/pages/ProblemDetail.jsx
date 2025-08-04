@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import Editor from "@monaco-editor/react";
+import { apiService, API_ENDPOINTS } from '../services/appwrite';
 
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -45,7 +46,7 @@ export default function ProblemDetail() {
     const fetchProblem = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:3001/api/problems/${id}`);
+        const response = await fetch(`${API_ENDPOINTS.PROBLEMS}/${id}`);
         
         if (!response.ok) {
           throw new Error(`Problem not found: ${response.status}`);
@@ -442,7 +443,7 @@ public:
         headers['x-user-avatar'] = '';
       }
       
-      const response = await fetch('http://localhost:3001/api/submissions', {
+      const response = await fetch(API_ENDPOINTS.SUBMISSIONS, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -500,7 +501,7 @@ public:
         headers['x-user-avatar'] = '';
       }
       
-      const response = await fetch('http://localhost:3001/api/ai/review', {
+      const response = await fetch(API_ENDPOINTS.AI_REVIEW, {
         method: 'POST',
         headers,
         body: JSON.stringify({

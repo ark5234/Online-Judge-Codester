@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiMessageSquare, FiUsers, FiClock, FiThumbsUp, FiLogIn, FiPlus, FiHeart, FiEye } from "react-icons/fi";
+import { API_ENDPOINTS } from "../services/appwrite";
 
 export default function Discuss() {
   const { user } = useAuth();
@@ -22,7 +23,7 @@ export default function Discuss() {
     const fetchDiscussions = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3001/api/discussions');
+        const response = await fetch(API_ENDPOINTS.DISCUSSIONS);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch discussions: ${response.status}`);
@@ -56,7 +57,7 @@ export default function Discuss() {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/discussions', {
+      const response = await fetch(API_ENDPOINTS.DISCUSSIONS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

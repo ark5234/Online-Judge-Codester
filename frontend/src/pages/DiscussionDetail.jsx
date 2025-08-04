@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 import { FiMessageSquare, FiUsers, FiClock, FiHeart, FiEye, FiArrowLeft, FiSend, FiThumbsUp } from "react-icons/fi";
+import { API_ENDPOINTS } from "../services/appwrite";
 
 export default function DiscussionDetail() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ export default function DiscussionDetail() {
     const fetchDiscussion = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:3001/api/discussions/${id}`);
+        const response = await fetch(`${API_ENDPOINTS.DISCUSSIONS}/${id}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch discussion: ${response.status}`);
@@ -49,7 +50,7 @@ export default function DiscussionDetail() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch(`http://localhost:3001/api/discussions/${id}/replies`, {
+      const response = await fetch(`${API_ENDPOINTS.DISCUSSIONS}/${id}/replies`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +88,7 @@ export default function DiscussionDetail() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/discussions/${id}/like`, {
+      const response = await fetch(`${API_ENDPOINTS.DISCUSSIONS}/${id}/like`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
