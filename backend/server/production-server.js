@@ -168,6 +168,19 @@ app.get('/api/test-mongo-direct', async (req, res) => {
   }
 });
 
+// Show MongoDB URI (for debugging)
+app.get('/api/show-mongo-uri', (req, res) => {
+  const mongoUri = process.env.MONGO_URI;
+  const maskedUri = mongoUri ? mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : 'Not Set';
+  
+  res.json({
+    mongoUri: maskedUri,
+    hasMongoUri: !!mongoUri,
+    uriLength: mongoUri ? mongoUri.length : 0,
+    startsWithMongo: mongoUri ? mongoUri.startsWith('mongodb') : false
+  });
+});
+
 app.get('/api/health', async (req, res) => {
   const compilerHealth = await evaluationService.checkCompilerHealth();
   
