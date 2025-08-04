@@ -8,18 +8,18 @@ client
 export const account = new Account(client);
 
 // Production configuration
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://your-render-backend.onrender.com';
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api';
 const COMPILER_URL = import.meta.env.VITE_COMPILER_URL || 'https://your-compiler-ec2-instance.com';
 
 // API endpoints
 export const API_ENDPOINTS = {
   // Backend endpoints
-  HEALTH: `${BACKEND_URL}/api/health`,
-  STATS: `${BACKEND_URL}/api/stats`,
-  PROBLEMS: `${BACKEND_URL}/api/problems`,
-  SUBMISSIONS: `${BACKEND_URL}/api/submissions`,
-  USERS: `${BACKEND_URL}/api/users`,
-  DISCUSSIONS: `${BACKEND_URL}/api/discussions`,
+  HEALTH: `${BACKEND_URL}/health`,
+  STATS: `${BACKEND_URL}/stats`,
+  PROBLEMS: `${BACKEND_URL}/problems`,
+  SUBMISSIONS: `${BACKEND_URL}/submissions`,
+  USERS: `${BACKEND_URL}/users`,
+  DISCUSSIONS: `${BACKEND_URL}/discussions`,
   
   // Compiler endpoints
   COMPILE: `${COMPILER_URL}/compile`,
@@ -27,8 +27,8 @@ export const API_ENDPOINTS = {
   COMPILER_HEALTH: `${COMPILER_URL}/health`,
   
   // AI endpoints
-  AI_REVIEW: `${BACKEND_URL}/api/ai/review`,
-  AI_SUGGEST: `${BACKEND_URL}/api/ai/suggest`,
+  AI_REVIEW: `${BACKEND_URL}/ai/review`,
+  AI_SUGGEST: `${BACKEND_URL}/ai/suggest`,
 };
 
 // API service functions
