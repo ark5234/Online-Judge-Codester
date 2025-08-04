@@ -576,6 +576,47 @@ app.get('/api/problems', optionalAuth, async (req, res) => {
   try {
     const { difficulty, category, search, page = 1, limit = 20 } = req.query;
     
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      // Return mock data when MongoDB is not connected
+      const mockProblems = [
+        {
+          _id: 'mock-problem-1',
+          title: 'Hello World',
+          description: 'Print "Hello, World!" to the console.',
+          difficulty: 'Easy',
+          category: 'Basic',
+          tags: ['strings', 'output'],
+          isActive: true,
+          createdAt: new Date(),
+          submissions: 0,
+          acceptanceRate: 0
+        },
+        {
+          _id: 'mock-problem-2',
+          title: 'Sum of Two Numbers',
+          description: 'Write a function that returns the sum of two numbers.',
+          difficulty: 'Easy',
+          category: 'Math',
+          tags: ['math', 'functions'],
+          isActive: true,
+          createdAt: new Date(),
+          submissions: 0,
+          acceptanceRate: 0
+        }
+      ];
+      
+      return res.json({
+        problems: mockProblems,
+        pagination: {
+          page: page * 1,
+          limit: limit * 1,
+          total: mockProblems.length,
+          pages: 1
+        }
+      });
+    }
+    
     let query = { isActive: true };
     
     if (difficulty) query.difficulty = difficulty;
@@ -606,6 +647,7 @@ app.get('/api/problems', optionalAuth, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error fetching problems:', error);
     res.status(500).json({ error: 'Failed to fetch problems' });
   }
 });
@@ -613,6 +655,32 @@ app.get('/api/problems', optionalAuth, async (req, res) => {
 // Get problem by ID
 app.get('/api/problems/:id', optionalAuth, async (req, res) => {
   try {
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      // Return mock data when MongoDB is not connected
+      const mockProblem = {
+        _id: req.params.id,
+        title: 'Hello World',
+        description: 'Print "Hello, World!" to the console.',
+        difficulty: 'Easy',
+        category: 'Basic',
+        tags: ['strings', 'output'],
+        isActive: true,
+        createdAt: new Date(),
+        submissions: 0,
+        acceptanceRate: 0,
+        testCases: req.user ? [
+          {
+            input: '',
+            output: 'Hello, World!',
+            isHidden: false
+          }
+        ] : []
+      };
+      
+      return res.json({ problem: mockProblem });
+    }
+    
     const problem = await Problem.findById(req.params.id);
     
     if (!problem) {
@@ -626,6 +694,7 @@ app.get('/api/problems/:id', optionalAuth, async (req, res) => {
     
     res.json({ problem });
   } catch (error) {
+    console.error('Error fetching problem:', error);
     res.status(500).json({ error: 'Failed to fetch problem' });
   }
 });
