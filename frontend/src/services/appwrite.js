@@ -9,7 +9,7 @@ export const account = new Account(client);
 
 // Production configuration
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api';
-const COMPILER_URL = import.meta.env.VITE_COMPILER_URL || 'https://your-compiler-ec2-instance.com';
+const COMPILER_URL = import.meta.env.VITE_COMPILER_URL || 'http://localhost:8000';
 
 // API endpoints
 export const API_ENDPOINTS = {

@@ -3,7 +3,7 @@ const Problem = require('../models/Problem');
 
 class EvaluationService {
   constructor() {
-    this.compilerUrl = process.env.COMPILER_URL || 'http://localhost:8000';
+    this.compilerUrl = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
   }
 
   // Evaluate code against test cases

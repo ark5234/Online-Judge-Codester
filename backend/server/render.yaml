@@ -20,6 +20,6 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: COMPILER_SERVICE_URL
-        value: https://your-compiler-ec2-instance.com
+        value: http://localhost:8000
       - key: CORS_ORIGIN
-        value: https://your-frontend-domain.vercel.app 
+        value: https://online-judge-codester.vercel.app 
