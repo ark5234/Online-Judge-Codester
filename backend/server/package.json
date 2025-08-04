@@ -6,7 +6,8 @@
     "start": "node production-server.js",
     "dev": "nodemon production-server.js",
     "test": "node test-production.js",
-    "seed": "node seed-data.js"
+    "seed": "node seed-data.js",
+    "test-mongo": "node test-mongo-connection.js"
   },
   "keywords": [],
   "author": "",

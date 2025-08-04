@@ -36,10 +36,36 @@ app.use(rateLimiter);
 const connectDB = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/codester';
-    await mongoose.connect(mongoUri);
+    
+    // Log connection attempt (mask password)
+    const maskedUri = mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@');
+    console.log('🔄 Attempting MongoDB connection to:', maskedUri);
+    
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 5,
+      maxIdleTimeMS: 30000,
+    });
+    
     console.log('✅ MongoDB connected successfully');
+    
+    // Handle connection events
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.log('⚠️ MongoDB disconnected');
+    });
+    
   } catch (error) {
-    console.log('❌ MongoDB connection failed, using mock mode');
+    console.error('❌ MongoDB connection failed:', error.message);
+    console.log('🔄 Using mock mode for development/testing');
+    
+    // Don't exit the process, just continue with mock mode
+    // process.exit(1);
   }
 };
 
@@ -112,12 +138,13 @@ app.get('/api/test-mongo-alt', async (req, res) => {
     const mongoUri = process.env.MONGO_URI;
     console.log('Testing MongoDB with alternative options');
     
-    // Test with different connection options
+    // Test with different connection options (removed deprecated options)
     await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 5,
+      maxIdleTimeMS: 30000,
     });
     
     console.log('✅ MongoDB connection successful with alternative options');
@@ -216,14 +243,38 @@ app.get('/api/test-mongo-cluster', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   const compilerHealth = await evaluationService.checkCompilerHealth();
   
+  // Get detailed MongoDB status
+  const getMongoStatus = () => {
+    const readyState = mongoose.connection.readyState;
+    const stateMap = {
+      0: 'Disconnected',
+      1: 'Connected',
+      2: 'Connecting',
+      3: 'Disconnecting'
+    };
+    return {
+      status: stateMap[readyState] || 'Unknown',
+      readyState,
+      host: mongoose.connection.host || 'Not Connected',
+      name: mongoose.connection.name || 'Not Connected'
+    };
+  };
+  
+  const mongoStatus = getMongoStatus();
+  
   res.json({ 
     status: 'OK', 
     message: 'Production Backend is running!',
     services: {
-      database: mongoose.connection.readyState === 1 ? 'Connected' : 'Mock Mode',
+      database: mongoStatus.status === 'Connected' ? 'Connected' : 'Mock Mode',
       redis: redis.status === 'ready' ? 'Connected' : 'Mock Mode',
       ai: aiService.isAvailable() ? 'Available' : 'Not Configured',
       compiler: compilerHealth ? 'Connected' : 'Not Available'
+    },
+    details: {
+      mongodb: mongoStatus,
+      redis: { status: redis.status },
+      environment: process.env.NODE_ENV || 'development'
     },
     timestamp: new Date().toISOString()
   });
