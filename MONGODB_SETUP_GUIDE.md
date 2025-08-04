@@ -36,7 +36,7 @@ Set these in your Render dashboard:
 
 ```bash
 # MongoDB Connection (replace with your actual values)
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/codester?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/codester?retryWrites=true&w=majority
 
 # Other required variables
 NODE_ENV=production
@@ -45,6 +45,8 @@ JWT_SECRET=your-super-secret-jwt-key
 REDIS_URL=redis://your-redis-connection-string
 CORS_ORIGIN=https://your-frontend-domain.vercel.app
 ```
+
+**Important:** Replace `YOUR_USERNAME`, `YOUR_PASSWORD`, and `YOUR_CLUSTER` with your actual values. If your password contains special characters like `@`, encode them as `%40`.
 
 ## Testing
 
