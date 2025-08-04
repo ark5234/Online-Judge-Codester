@@ -81,6 +81,31 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
+// Test MongoDB connection endpoint
+app.get('/api/test-mongo', async (req, res) => {
+  try {
+    const mongoUri = process.env.MONGO_URI;
+    console.log('Testing MongoDB connection with URI:', mongoUri);
+    
+    // Test connection
+    await mongoose.connect(mongoUri);
+    console.log('✅ MongoDB connection successful');
+    
+    res.json({
+      success: true,
+      message: 'MongoDB connection successful',
+      readyState: mongoose.connection.readyState
+    });
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+    res.json({
+      success: false,
+      error: error.message,
+      readyState: mongoose.connection.readyState
+    });
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   const compilerHealth = await evaluationService.checkCompilerHealth();
   
