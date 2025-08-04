@@ -137,6 +137,19 @@ app.get('/api/test-mongo-alt', async (req, res) => {
   }
 });
 
+// Show MongoDB URI (for debugging)
+app.get('/api/show-mongo-uri', (req, res) => {
+  const mongoUri = process.env.MONGO_URI;
+  const maskedUri = mongoUri ? mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : 'Not Set';
+  
+  res.json({
+    mongoUri: maskedUri,
+    hasMongoUri: !!mongoUri,
+    uriLength: mongoUri ? mongoUri.length : 0,
+    startsWithMongo: mongoUri ? mongoUri.startsWith('mongodb') : false
+  });
+});
+
 // Test MongoDB with direct connection (no DNS resolution)
 app.get('/api/test-mongo-direct', async (req, res) => {
   try {
@@ -168,17 +181,36 @@ app.get('/api/test-mongo-direct', async (req, res) => {
   }
 });
 
-// Show MongoDB URI (for debugging)
-app.get('/api/show-mongo-uri', (req, res) => {
-  const mongoUri = process.env.MONGO_URI;
-  const maskedUri = mongoUri ? mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : 'Not Set';
-  
-  res.json({
-    mongoUri: maskedUri,
-    hasMongoUri: !!mongoUri,
-    uriLength: mongoUri ? mongoUri.length : 0,
-    startsWithMongo: mongoUri ? mongoUri.startsWith('mongodb') : false
-  });
+// Test MongoDB with different cluster name
+app.get('/api/test-mongo-cluster', async (req, res) => {
+  try {
+    console.log('Testing MongoDB with different cluster approach');
+    
+    // Try with a different connection approach
+    const clusterUri = 'mongodb+srv://vikrantkawadkar2099:oj_data%402099@cluster0.8ndl519.mongodb.net/codester?retryWrites=true&w=majority&ssl=true&authSource=admin&directConnection=false';
+    
+    await mongoose.connect(clusterUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+    });
+    
+    console.log('✅ MongoDB cluster connection successful');
+    
+    res.json({
+      success: true,
+      message: 'MongoDB cluster connection successful',
+      readyState: mongoose.connection.readyState
+    });
+  } catch (error) {
+    console.error('❌ MongoDB cluster connection error:', error.message);
+    res.json({
+      success: false,
+      error: error.message,
+      readyState: mongoose.connection.readyState
+    });
+  }
 });
 
 app.get('/api/health', async (req, res) => {
