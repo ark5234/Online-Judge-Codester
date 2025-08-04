@@ -106,6 +106,37 @@ app.get('/api/test-mongo', async (req, res) => {
   }
 });
 
+// Test MongoDB with alternative connection options
+app.get('/api/test-mongo-alt', async (req, res) => {
+  try {
+    const mongoUri = process.env.MONGO_URI;
+    console.log('Testing MongoDB with alternative options');
+    
+    // Test with different connection options
+    await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    
+    console.log('✅ MongoDB connection successful with alternative options');
+    
+    res.json({
+      success: true,
+      message: 'MongoDB connection successful with alternative options',
+      readyState: mongoose.connection.readyState
+    });
+  } catch (error) {
+    console.error('❌ MongoDB connection error with alternative options:', error.message);
+    res.json({
+      success: false,
+      error: error.message,
+      readyState: mongoose.connection.readyState
+    });
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   const compilerHealth = await evaluationService.checkCompilerHealth();
   
@@ -981,4 +1012,4 @@ app.listen(PORT, () => {
   console.log(`🤖 AI Review: http://localhost:${PORT}/api/ai/review`);
   console.log(`📈 Stats: http://localhost:${PORT}/api/stats`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
-}); 
+});
