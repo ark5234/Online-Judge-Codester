@@ -20,10 +20,6 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: COMPILER_SERVICE_URL
-        value: http://localhost:8000
-      - key: CORS_ORIGIN
-        value: https://online-judge-codester.vercel.app 
-      - key: COMPILER_SERVICE_URL
         value: http://13.203.97.246:8000
       - key: CORS_ORIGIN
-        value: http://13.203.97.246:8000
+        value: https://online-judge-codester.vercel.app
