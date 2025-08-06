@@ -1297,10 +1297,6 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Production Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📝 Submissions: http://localhost:${PORT}/api/submissions`);
-  console.log(`🤖 AI Review: http://localhost:${PORT}/api/ai/review`);
-  console.log(`📈 Stats: http://localhost:${PORT}/api/stats`);
+  console.log(`🚀 Production Server running on port ${PORT}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
 });
