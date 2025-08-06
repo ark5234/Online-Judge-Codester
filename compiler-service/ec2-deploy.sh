@@ -46,6 +46,8 @@ FLASK_APP=compiler.py
 COMPILER_PORT=8000
 MAX_EXECUTION_TIME=30
 MAX_MEMORY_LIMIT=512
+PUBLIC_ECR_URI=public.ecr.aws
+ECR_REPOSITORY=codester-compiler
 EOF
 
 echo "✅ Environment file created!"
