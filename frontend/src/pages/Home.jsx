@@ -91,15 +91,15 @@ export default function Home() {
         {/* Hero Section */}
         <section className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               className="text-center"
             >
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
                 Welcome back, <span className="text-blue-600 dark:text-blue-400">{user.name || user.email}</span>!
-              </h1>
+                </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
                 Ready to tackle today's coding challenges? Let's keep pushing your limits!
               </p>
@@ -119,7 +119,7 @@ export default function Home() {
                   Join Contest
                 </Link>
               </div>
-            </motion.div>
+              </motion.div>
           </div>
         </section>
 
@@ -175,8 +175,8 @@ export default function Home() {
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeContests}</p>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+                    </div>
+                </motion.div>
           </div>
         </section>
 
@@ -206,10 +206,10 @@ export default function Home() {
                     </div>
                   ) : topUsers.length > 0 ? (
                     topUsers.map((user, index) => (
-                      <motion.div
+              <motion.div
                         key={user._id || user.id || index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
                         className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4"
                       >
@@ -221,13 +221,13 @@ export default function Home() {
                             <div>
                               <h3 className="font-semibold text-gray-900 dark:text-white">
                                 {user.name || user.username || user.email}
-                              </h3>
+                </h3>
                               <p className="text-sm text-gray-600 dark:text-gray-300">
                                 {user.problemsSolved || user.solved || 0} problems solved
                               </p>
                             </div>
-                          </div>
-                          <div className="text-right">
+                      </div>
+                      <div className="text-right">
                             <div className="text-lg font-bold text-gray-900 dark:text-white">
                               {user.score || user.points || 0}
                             </div>
@@ -235,7 +235,7 @@ export default function Home() {
                               points
                             </div>
                           </div>
-                        </div>
+                      </div>
                       </motion.div>
                     ))
                   ) : (
@@ -249,14 +249,14 @@ export default function Home() {
                   View Full Leaderboard →
                 </Link>
               </div>
-            </motion.div>
+              </motion.div>
           </div>
         </section>
 
         {/* CTA Section */}
         <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <motion.div
+              <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -281,7 +281,7 @@ export default function Home() {
                   Join a Contest
                 </Link>
               </div>
-            </motion.div>
+              </motion.div>
           </div>
         </section>
       </div>
@@ -294,9 +294,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center"
           >
@@ -320,7 +320,7 @@ export default function Home() {
               >
                 Browse Problems
               </Link>
-            </div>
+                </div>
           </motion.div>
         </div>
       </section>
@@ -346,16 +346,16 @@ export default function Home() {
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mb-4">
                 <FiAward className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
+                </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Compete & Win</h3>
-              <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600 dark:text-gray-300">
                 Participate in coding contests, climb the leaderboard, and earn recognition for your skills.
-              </p>
-            </div>
+                </p>
+          </div>
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mb-4">
                 <FiUsers className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
+        </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Learn Together</h3>
               <p className="text-gray-600 dark:text-gray-300">
                 Join discussions, share solutions, and learn from the community of passionate coders.
@@ -377,24 +377,24 @@ export default function Home() {
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50 text-center">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <FiUsers className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
+                </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUsers.toLocaleString()}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
-            </div>
+                  </div>
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50 text-center">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <FiCode className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
+                  </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalProblems}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Problems</p>
-            </div>
+                  </div>
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50 text-center">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <FiBarChart className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSubmissions.toLocaleString()}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Submissions</p>
-            </div>
+                        </div>
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50 text-center">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <FiAward className="w-6 h-6 text-orange-600 dark:text-orange-400" />
@@ -402,7 +402,7 @@ export default function Home() {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeContests}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Active Contests</p>
             </div>
-          </motion.div>
+            </motion.div>
         </div>
       </section>
 
