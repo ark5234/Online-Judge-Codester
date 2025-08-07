@@ -14,6 +14,7 @@ import {
   FiCheckCircle,
   FiXCircle
 } from "react-icons/fi";
+import adminService from "../services/adminService";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -23,6 +24,8 @@ export default function AdminDashboard() {
     totalSubmissions: 0,
     activeContests: 0
   });
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: FiBarChart2 },
@@ -33,87 +36,142 @@ export default function AdminDashboard() {
   ];
 
   useEffect(() => {
-    // Fetch admin stats
+    // Fetch admin stats and users
     fetchAdminStats();
+    fetchUsers();
   }, []);
 
   const fetchAdminStats = async () => {
-    // Mock data for now - replace with actual API calls
-    setStats({
-      totalUsers: 1250,
-      totalProblems: 150,
-      totalSubmissions: 5000,
-      activeContests: 3
-    });
+    try {
+      const data = await adminService.getAdminStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getUsers();
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { title: 'Total Users', value: stats.totalUsers, icon: FiUsers, color: 'blue' },
-          { title: 'Total Problems', value: stats.totalProblems, icon: FiFileText, color: 'green' },
-          { title: 'Total Submissions', value: stats.totalSubmissions, icon: FiBarChart2, color: 'purple' },
-          { title: 'Active Contests', value: stats.activeContests, icon: FiActivity, color: 'orange' }
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {stat.title}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {stat.value.toLocaleString()}
-                </p>
-              </div>
-              <div className={`p-3 rounded-lg bg-${stat.color}-100 dark:bg-${stat.color}-900/20`}>
-                <stat.icon className={`w-6 h-6 text-${stat.color}-600 dark:text-${stat.color}-400`} />
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50"
+        >
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mr-4">
+              <FiUsers className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
-          </motion.div>
-        ))}
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUsers}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50"
+        >
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mr-4">
+              <FiFileText className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Problems</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalProblems}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50"
+        >
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mr-4">
+              <FiBarChart2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Submissions</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSubmissions}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50"
+        >
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center mr-4">
+              <FiActivity className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Contests</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeContests}</p>
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Recent Activity
-        </h3>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-200/50 dark:border-gray-700/50"
+      >
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
         <div className="space-y-4">
-          {[
-            { action: 'New user registered', user: 'john@example.com', time: '2 minutes ago' },
-            { action: 'Problem submitted', user: 'alice@example.com', time: '5 minutes ago' },
-            { action: 'Contest created', user: 'admin@codester.com', time: '10 minutes ago' },
-            { action: 'User banned', user: 'spam@example.com', time: '1 hour ago' }
-          ].map((activity, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center">
+              <FiUsers className="w-5 h-5 text-blue-600 mr-3" />
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {activity.action}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {activity.user}
-                </p>
+                <p className="font-medium text-gray-900 dark:text-white">New user registered</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">2 minutes ago</p>
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {activity.time}
-              </span>
             </div>
-          ))}
+            <FiCheckCircle className="w-5 h-5 text-green-600" />
+          </div>
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center">
+              <FiFileText className="w-5 h-5 text-green-600 mr-3" />
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Problem solved</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">5 minutes ago</p>
+              </div>
+            </div>
+            <FiCheckCircle className="w-5 h-5 text-green-600" />
+          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 
   const renderUsers = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-gray-200 dark:border-gray-700">
+    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -144,56 +202,65 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-            {[
-              { name: 'John Doe', email: 'john@example.com', role: 'user', status: 'active' },
-              { name: 'Alice Smith', email: 'alice@example.com', role: 'user', status: 'active' },
-              { name: 'Admin User', email: 'admin@codester.com', role: 'admin', status: 'active' },
-              { name: 'Spam User', email: 'spam@example.com', role: 'user', status: 'banned' }
-            ].map((user, index) => (
-              <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {user.name}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {user.email}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.role === 'admin' 
-                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                  }`}>
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.status === 'active'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                  }`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
-                      <FiEye className="w-4 h-4" />
-                    </button>
-                    <button className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">
-                      <FiEdit className="w-4 h-4" />
-                    </button>
-                    <button className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+            {loading ? (
+              <tr>
+                <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  Loading users...
                 </td>
               </tr>
-            ))}
+            ) : users.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No users found
+                </td>
+              </tr>
+            ) : (
+              users.slice(0, 5).map((user) => (
+                <tr key={user._id || user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {user.name || user.username || user.email}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {user.email}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'admin' 
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
+                      {user.role || 'user'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      (user.isActive !== undefined ? user.isActive : true)
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                    }`}>
+                      {(user.isActive !== undefined ? user.isActive : true) ? 'active' : 'banned'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
+                        <FiEye className="w-4 h-4" />
+                      </button>
+                      <button className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">
+                        <FiEdit className="w-4 h-4" />
+                      </button>
+                      <button className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -201,242 +268,114 @@ export default function AdminDashboard() {
   );
 
   const renderProblems = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-gray-200 dark:border-gray-700">
+    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Problem Management
           </h3>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
             <FiPlus className="w-4 h-4 mr-2" />
             Add Problem
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Problem
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Difficulty
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-            {[
-              { title: 'Two Sum', difficulty: 'Easy', status: 'published' },
-              { title: 'Add Two Numbers', difficulty: 'Medium', status: 'draft' },
-              { title: 'Longest Substring', difficulty: 'Hard', status: 'published' },
-              { title: 'Palindrome Number', difficulty: 'Easy', status: 'published' }
-            ].map((problem, index) => (
-              <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {problem.title}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    problem.difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                    problem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                    'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                  }`}>
-                    {problem.difficulty}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    problem.status === 'published'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                  }`}>
-                    {problem.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
-                      <FiEye className="w-4 h-4" />
-                    </button>
-                    <button className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">
-                      <FiEdit className="w-4 h-4" />
-                    </button>
-                    <button className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">Problem management interface will be implemented here.</p>
       </div>
     </div>
   );
 
   const renderContests = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-gray-200 dark:border-gray-700">
+    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Contest Management
           </h3>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+          <button className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200">
             <FiPlus className="w-4 h-4 mr-2" />
             Create Contest
           </button>
         </div>
       </div>
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            { title: 'Weekly Challenge', status: 'active', participants: 45, problems: 5 },
-            { title: 'Beginner Contest', status: 'upcoming', participants: 23, problems: 3 },
-            { title: 'Advanced Challenge', status: 'ended', participants: 67, problems: 7 }
-          ].map((contest, index) => (
-            <div key={index} className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900 dark:text-white">
-                  {contest.title}
-                </h4>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  contest.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                  contest.status === 'upcoming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
-                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
-                  {contest.status}
-                </span>
-              </div>
-              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <p>Participants: {contest.participants}</p>
-                <p>Problems: {contest.problems}</p>
-              </div>
-              <div className="flex space-x-2 mt-4">
-                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
-                  <FiEye className="w-4 h-4" />
-                </button>
-                <button className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">
-                  <FiEdit className="w-4 h-4" />
-                </button>
-                <button className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
-                  <FiTrash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-gray-600 dark:text-gray-400">Contest management interface will be implemented here.</p>
       </div>
     </div>
   );
 
   const renderSettings = () => (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Platform Settings
+    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          System Settings
         </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">Maintenance Mode</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Temporarily disable the platform</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-gray-700">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition"></span>
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">Registration</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Allow new user registrations</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-5"></span>
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Send email notifications to users</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-5"></span>
-            </button>
-          </div>
-        </div>
+      </div>
+      <div className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">System settings interface will be implemented here.</p>
       </div>
     </div>
   );
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return renderOverview();
-      case 'users':
-        return renderUsers();
-      case 'problems':
-        return renderProblems();
-      case 'contests':
-        return renderContests();
-      case 'settings':
-        return renderSettings();
-      default:
-        return renderOverview();
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Manage your platform, users, and content
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white mr-4 shadow-lg">
+                  <FiShield className="w-6 h-6" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                    Admin Dashboard
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Manage your online judge platform
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8">
+            {/* Tabs */}
+            <div className="flex space-x-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <tab.icon className="w-4 h-4 mr-2" />
                   {tab.name}
                 </button>
               ))}
-            </nav>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Content */}
         <motion.div
-          key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
         >
-          {renderContent()}
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'users' && renderUsers()}
+          {activeTab === 'problems' && renderProblems()}
+          {activeTab === 'contests' && renderContests()}
+          {activeTab === 'settings' && renderSettings()}
         </motion.div>
       </div>
     </div>

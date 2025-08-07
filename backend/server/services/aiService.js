@@ -5,6 +5,8 @@ class AIService {
     this.genAI = null;
     this.model = null;
     this.initialized = false;
+    // Track hint sessions for progressive help
+    this.hintSessions = new Map();
   }
 
   // Initialize AI service lazily
@@ -24,6 +26,163 @@ class AIService {
       console.error('Failed to initialize AI service:', error);
       throw new Error('Failed to initialize AI service');
     }
+  }
+
+  // Generate progressive help for a problem
+  async generateProgressiveHelp(problemTitle, question, userId, code = '') {
+    try {
+      this.initialize();
+      
+      // Create or get hint session for this user and problem
+      const sessionKey = `${userId}:${problemTitle}`;
+      let session = this.hintSessions.get(sessionKey);
+      
+      if (!session) {
+        session = {
+          hintCount: 0,
+          lastAskTime: Date.now(),
+          problemTitle,
+          userId
+        };
+        this.hintSessions.set(sessionKey, session);
+      }
+      
+      // Increment hint count
+      session.hintCount++;
+      session.lastAskTime = Date.now();
+      
+      // Clean up old sessions (older than 1 hour)
+      this._cleanupOldSessions();
+      
+      let response;
+      
+      if (session.hintCount === 1) {
+        // First hint - very subtle guidance
+        response = await this._generateFirstHint(problemTitle, question, code);
+      } else if (session.hintCount === 2) {
+        // Second hint - more specific guidance
+        response = await this._generateSecondHint(problemTitle, question, code);
+      } else if (session.hintCount === 3) {
+        // Third hint - direct approach guidance
+        response = await this._generateThirdHint(problemTitle, question, code);
+      } else {
+        // Fourth and beyond - provide full solution
+        response = await this._generateFullSolution(problemTitle, question, code);
+      }
+      
+      return {
+        response,
+        hintLevel: session.hintCount,
+        isFullSolution: session.hintCount >= 4
+      };
+    } catch (error) {
+      console.error('AI Progressive Help Error:', error);
+      return {
+        response: `Sorry, I couldn't provide help at the moment. Please try again later. Error: ${error.message}`,
+        hintLevel: 0,
+        isFullSolution: false
+      };
+    }
+  }
+
+  // Generate first hint (very subtle)
+  async _generateFirstHint(problemTitle, question, code) {
+    const prompt = `You are providing the FIRST hint for the programming problem "${problemTitle}".
+
+Student Question: "${question}"
+${code ? `Student Code: \`\`\`\n${code}\n\`\`\`` : ''}
+
+This is the FIRST hint, so be very subtle and encouraging. Don't give away the solution or approach.
+Focus on:
+- Understanding what the problem is asking for
+- Identifying the key concepts involved
+- Encouraging the student to think about the problem differently
+
+Keep it brief, encouraging, and very subtle. Don't mention specific algorithms or data structures yet.`;
+    
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+
+  // Generate second hint (more specific)
+  async _generateSecondHint(problemTitle, question, code) {
+    const prompt = `You are providing the SECOND hint for the programming problem "${problemTitle}".
+
+Student Question: "${question}"
+${code ? `Student Code: \`\`\`\n${code}\n\`\`\`` : ''}
+
+This is the SECOND hint, so you can be more specific but still don't give away the solution.
+Focus on:
+- Suggesting relevant data structures or algorithms
+- Pointing out patterns or approaches to consider
+- Helping them think about the problem step by step
+- Mentioning common techniques for this type of problem
+
+Be more specific than the first hint, but still guide rather than solve.`;
+    
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+
+  // Generate third hint (direct approach)
+  async _generateThirdHint(problemTitle, question, code) {
+    const prompt = `You are providing the THIRD hint for the programming problem "${problemTitle}".
+
+Student Question: "${question}"
+${code ? `Student Code: \`\`\`\n${code}\n\`\`\`` : ''}
+
+This is the THIRD hint, so you can be quite direct about the approach.
+Focus on:
+- Explaining the optimal algorithm or approach
+- Breaking down the solution into clear steps
+- Discussing time and space complexity considerations
+- Providing pseudo-code or high-level solution structure
+
+Be direct about the approach but don't provide the complete code solution yet.`;
+    
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+
+  // Generate full solution (after 3 hints)
+  async _generateFullSolution(problemTitle, question, code) {
+    const prompt = `You are providing the COMPLETE SOLUTION for the programming problem "${problemTitle}".
+
+Student Question: "${question}"
+${code ? `Student Code: \`\`\`\n${code}\n\`\`\`` : ''}
+
+Since this is the 4th or later request, provide a complete, detailed solution including:
+1. **Complete Algorithm Explanation**: Step-by-step breakdown
+2. **Full Code Solution**: Complete working code in multiple languages
+3. **Time & Space Complexity Analysis**: Detailed performance analysis
+4. **Edge Cases**: Important edge cases to consider
+5. **Alternative Approaches**: Other ways to solve this problem
+6. **Learning Points**: Key concepts demonstrated
+
+Make this comprehensive and educational. Include complete code solutions.`;
+    
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+
+  // Clean up old hint sessions
+  _cleanupOldSessions() {
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    for (const [key, session] of this.hintSessions.entries()) {
+      if (session.lastAskTime < oneHourAgo) {
+        this.hintSessions.delete(key);
+      }
+    }
+  }
+
+  // Reset hint session for a user and problem
+  resetHintSession(userId, problemTitle) {
+    const sessionKey = `${userId}:${problemTitle}`;
+    this.hintSessions.delete(sessionKey);
   }
 
   // Generate code review
@@ -82,7 +241,7 @@ Keep your response educational, encouraging, and focused on learning.`;
     }
   }
 
-  // Generate hints for a problem
+  // Generate hints for a problem (legacy method - now uses progressive help)
   async generateHints(problemTitle, currentHintLevel = 1) {
     try {
       this.initialize();
@@ -205,6 +364,7 @@ Format as a structured learning plan.`;
       available: this.isAvailable(),
       model: 'gemini-2.0-flash',
       features: [
+        'progressive_help',
         'code_review',
         'problem_explanation',
         'hints',

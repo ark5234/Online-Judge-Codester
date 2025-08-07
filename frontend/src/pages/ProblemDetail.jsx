@@ -38,6 +38,8 @@ export default function ProblemDetail() {
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiSection, setShowAiSection] = useState(false);
+  const [hintLevel, setHintLevel] = useState(0);
+  const [isFullSolution, setIsFullSolution] = useState(false);
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
 
@@ -519,11 +521,42 @@ public:
 
       const result = await response.json();
       setAiResponse(result.response);
+      setHintLevel(result.hintLevel || 0);
+      setIsFullSolution(result.isFullSolution || false);
     } catch (error) {
       console.error('AI Review error:', error);
       setAiResponse('Sorry, I cannot connect to the AI service right now. Please try again later.');
     } finally {
       setIsAiLoading(false);
+    }
+  };
+
+  const handleResetHints = async () => {
+    if (!user) return;
+    
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.$id}`,
+        'x-appwrite-token': user.$id,
+      };
+      
+      const response = await fetch(`${API_ENDPOINTS.AI_REVIEW.replace('/review', '/reset-hints')}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          problemTitle: problem.title,
+        }),
+      });
+
+      if (response.ok) {
+        setHintLevel(0);
+        setIsFullSolution(false);
+        setAiResponse('');
+        setAiQuestion('');
+      }
+    } catch (error) {
+      console.error('Reset hints error:', error);
     }
   };
 
@@ -876,6 +909,21 @@ public:
                         <li>• Reviewing your code and suggesting improvements</li>
                         <li>• Providing hints and tips</li>
                       </ul>
+                      {hintLevel > 0 && (
+                        <div className="mt-3 p-2 bg-blue-100 dark:bg-blue-800/30 rounded border border-blue-300 dark:border-blue-600">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-blue-700 dark:text-blue-300">
+                              Hint Level: {hintLevel}/3 {isFullSolution && '(Full Solution)'}
+                            </span>
+                            <button
+                              onClick={handleResetHints}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline"
+                            >
+                              Reset Hints
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="space-y-3">
@@ -899,17 +947,16 @@ public:
                         ) : (
                           <>
                             <FiSend className="w-4 h-4 mr-2" />
-                            Ask AI
+                            {hintLevel === 0 ? 'Ask AI' : hintLevel < 3 ? `Get Hint ${hintLevel + 1}` : 'Get Full Solution'}
                           </>
                         )}
                       </button>
                     </div>
                     
                     {aiResponse && (
-                      <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">AI Response:</h4>
-                        <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                          {aiResponse}
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <div dangerouslySetInnerHTML={{ __html: aiResponse.replace(/\n/g, '<br/>') }} />
                         </div>
                       </div>
                     )}

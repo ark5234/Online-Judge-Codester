@@ -823,24 +823,54 @@ app.post('/api/ai/review', guestAuth, async (req, res) => {
       });
     }
     
-    let response;
-    if (code) {
-      response = await aiService.generateCodeReview(code, language, problemTitle);
-    } else {
-      response = await aiService.generateProblemExplanation(problemTitle, question);
-    }
+    // Use progressive help system
+    const userId = req.user.id || req.user.$id || 'anonymous';
+    const result = await aiService.generateProgressiveHelp(problemTitle, question, userId, code);
     
     // Cache response
     if (redis.status === 'ready') {
-      const cacheKey = `ai_response:${problemTitle}:${question}`;
-      await redis.setex(cacheKey, 3600, response);
+      const cacheKey = `ai_response:${problemTitle}:${question}:${result.hintLevel}`;
+      await redis.setex(cacheKey, 3600, result.response);
     }
     
-    res.json({ response });
+    res.json({ 
+      response: result.response,
+      hintLevel: result.hintLevel,
+      isFullSolution: result.isFullSolution
+    });
   } catch (error) {
     console.error('AI review error:', error);
     res.status(500).json({ 
       error: 'AI review failed',
+      message: error.message 
+    });
+  }
+});
+
+// Reset AI hint session
+app.post('/api/ai/reset-hints', guestAuth, async (req, res) => {
+  try {
+    const { problemTitle } = req.body;
+    
+    // Block AI access for guest users
+    if (req.user.role === 'guest') {
+      return res.status(403).json({ 
+        error: 'Authentication required',
+        message: 'Please sign in to access AI features'
+      });
+    }
+    
+    const userId = req.user.id || req.user.$id || 'anonymous';
+    aiService.resetHintSession(userId, problemTitle);
+    
+    res.json({ 
+      message: 'Hint session reset successfully',
+      hintLevel: 0
+    });
+  } catch (error) {
+    console.error('Reset hints error:', error);
+    res.status(500).json({ 
+      error: 'Failed to reset hint session',
       message: error.message 
     });
   }
