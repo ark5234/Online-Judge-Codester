@@ -127,4 +127,9 @@ async function seedProblems() {
   }
 }
 
-module.exports = seedProblems; 
+module.exports = seedProblems;
+
+// Run if this file is executed directly
+if (require.main === module) {
+  seedProblems();
+} 
