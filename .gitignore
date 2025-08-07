@@ -141,3 +141,12 @@ seed-*.js
 # Local configuration files
 config.local.js
 settings.local.js
+
+# Monaco Editor files (large build files)
+**/monaco-editor/**/*.js.map
+**/monaco-editor/**/*.worker.js
+**/monaco-editor/**/editor.main.js
+**/monaco-editor/**/tsWorker.js
+**/monaco-editor/**/cssWorker.js
+**/monaco-editor/**/htmlWorker.js
+**/monaco-editor/**/jsonWorker.js
