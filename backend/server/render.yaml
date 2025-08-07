@@ -22,4 +22,4 @@ services:
       - key: COMPILER_SERVICE_URL
         value: http://13.203.97.246:8000
       - key: CORS_ORIGIN
-        value: https://online-judge-codester.vercel.app
+        value: https://codester.vercel.app
