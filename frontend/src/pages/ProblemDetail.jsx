@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft } from 'react-icons/fi';
+import { FiMessageCircle, FiSend, FiLoader, FiArrowLeft, FiCopy, FiCheck } from 'react-icons/fi';
 import Editor from "@monaco-editor/react";
 import { apiService, API_ENDPOINTS } from '../services/appwrite';
+import { formatAIResponse, copyToClipboard, extractCodeBlocks } from '../utils/formatAI';
 
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -40,6 +41,7 @@ export default function ProblemDetail() {
   const [showAiSection, setShowAiSection] = useState(false);
   const [hintLevel, setHintLevel] = useState(0);
   const [isFullSolution, setIsFullSolution] = useState(false);
+  const [copiedCodeBlocks, setCopiedCodeBlocks] = useState(new Set());
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
 
@@ -560,6 +562,31 @@ public:
     }
   };
 
+  const handleCopyCode = async (code, blockIndex) => {
+    try {
+      await copyToClipboard(code);
+      setCopiedCodeBlocks(prev => new Set(prev).add(blockIndex));
+      setTimeout(() => {
+        setCopiedCodeBlocks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(blockIndex);
+          return newSet;
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy code:', error);
+    }
+  };
+
+  const handleCopyFullResponse = async () => {
+    try {
+      await copyToClipboard(aiResponse);
+      // You could add a toast notification here
+    } catch (error) {
+      console.error('Failed to copy response:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -954,10 +981,22 @@ public:
                     </div>
                     
                     {aiResponse && (
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <div dangerouslySetInnerHTML={{ __html: aiResponse.replace(/\n/g, '<br/>') }} />
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">AI Response</span>
+                          <button
+                            onClick={handleCopyFullResponse}
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors flex items-center gap-1"
+                          >
+                            <FiCopy className="w-4 h-4" />
+                            Copy All
+                          </button>
                         </div>
+                        <AIResponseRenderer 
+                          response={aiResponse}
+                          onCopyCode={handleCopyCode}
+                          copiedCodeBlocks={copiedCodeBlocks}
+                        />
                       </div>
                     )}
                   </div>
@@ -1016,3 +1055,40 @@ public:
     </div>
   );
 } 
+
+// AI Response Renderer Component
+const AIResponseRenderer = ({ response, onCopyCode, copiedCodeBlocks }) => {
+  const { html, codeBlocks } = formatAIResponse(response);
+  
+  useEffect(() => {
+    // Add event listeners for copy buttons
+    const copyButtons = document.querySelectorAll('.copy-code-btn');
+    
+    const handleCopyClick = (event) => {
+      const blockIndex = parseInt(event.currentTarget.getAttribute('data-block-index'));
+      const codeBlock = codeBlocks[blockIndex];
+      if (codeBlock) {
+        onCopyCode(codeBlock.code, blockIndex);
+      }
+    };
+    
+    copyButtons.forEach(button => {
+      button.addEventListener('click', handleCopyClick);
+    });
+    
+    return () => {
+      copyButtons.forEach(button => {
+        button.removeEventListener('click', handleCopyClick);
+      });
+    };
+  }, [response, codeBlocks, onCopyCode]);
+  
+  return (
+    <div className="p-4">
+      <div 
+        className="prose prose-sm dark:prose-invert max-w-none" 
+        dangerouslySetInnerHTML={{ __html: html }} 
+      />
+    </div>
+  );
+};

@@ -84,8 +84,11 @@ class EvaluationService {
   // Run a single test case
   async runTestCase(code, language, testCase) {
     try {
+      // Wrap user code to make it executable
+      const executableCode = this.wrapCodeForExecution(code, language, testCase);
+      
       const response = await axios.post(`${this.compilerUrl}/execute`, {
-        code,
+        code: executableCode,
         language,
         input: testCase.input
       }, {
@@ -98,22 +101,20 @@ class EvaluationService {
         return {
           success: false,
           output: '',
-          error: result.error,
+          error: result.error || 'Compilation error',
           executionTime: 0
         };
       }
 
-      // Normalize output for comparison
-      const normalizedOutput = this.normalizeOutput(result.output);
-      const normalizedExpected = this.normalizeOutput(testCase.output);
-
-      const isCorrect = normalizedOutput === normalizedExpected;
-
+      // Compare outputs (normalize for comparison)
+      const expectedOutput = this.normalizeOutput(testCase.output);
+      const actualOutput = this.normalizeOutput(result.output);
+      
       return {
-        success: isCorrect,
-        output: result.output,
-        error: result.error,
-        executionTime: result.executionTime || 0
+        success: expectedOutput === actualOutput,
+        output: result.output.trim(),
+        error: expectedOutput === actualOutput ? null : `Expected: ${testCase.output}, Got: ${result.output.trim()}`,
+        executionTime: result.execution_time || 100
       };
 
     } catch (error) {
@@ -121,20 +122,84 @@ class EvaluationService {
       return {
         success: false,
         output: '',
-        error: error.message,
+        error: `Compiler service error: ${error.message}`,
         executionTime: 0
       };
     }
   }
 
-  // Normalize output for comparison (remove extra whitespace, newlines, etc.)
+  // Wrap user code to make it executable
+  wrapCodeForExecution(userCode, language, testCase) {
+    switch (language) {
+      case 'python':
+        return `${userCode}
+
+# Test execution
+import json
+import sys
+
+# Read input
+lines = sys.stdin.read().strip().split('\\n')
+nums_str = lines[0].strip('[]')
+nums = [int(x.strip()) for x in nums_str.split(',')]
+target = int(lines[1])
+
+# Call function and print result
+result = twoSum(nums, target)
+print(json.dumps(result))`;
+
+      case 'javascript':
+        return `${userCode}
+
+// Test execution
+const fs = require('fs');
+const input = fs.readFileSync(process.stdin.fd, 'utf-8').trim().split('\\n');
+const numsStr = input[0].replace(/[\\[\\]]/g, '');
+const nums = numsStr.split(',').map(n => parseInt(n.trim()));
+const target = parseInt(input[1]);
+
+// Call function and print result
+const result = twoSum(nums, target);
+console.log(JSON.stringify(result));`;
+
+      case 'java':
+        return `import java.util.*;
+import java.io.*;
+
+${userCode}
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            Scanner sc = new Scanner(System.in);
+            String numsLine = sc.nextLine().replaceAll("[\\\\[\\\\]]", "");
+            String[] numsStr = numsLine.split(",");
+            int[] nums = new int[numsStr.length];
+            for (int i = 0; i < numsStr.length; i++) {
+                nums[i] = Integer.parseInt(numsStr[i].trim());
+            }
+            int target = sc.nextInt();
+            
+            Solution sol = new Solution();
+            int[] result = sol.twoSum(nums, target);
+            System.out.println(Arrays.toString(result));
+            sc.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}`;
+
+      default:
+        return userCode;
+    }
+  }
+
+  // Normalize output for comparison
   normalizeOutput(output) {
-    return output
-      .trim()
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n')
-      .replace(/\s+/g, ' ')
-      .toLowerCase();
+    if (!output) return '';
+    // Remove all whitespace, brackets, and normalize to compare just the numbers
+    return output.toString().trim().replace(/[\s\[\],]/g, '');
   }
 
   // Check if compiler service is available

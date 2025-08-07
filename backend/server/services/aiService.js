@@ -90,15 +90,20 @@ class AIService {
     const prompt = `You are providing the FIRST hint for the programming problem "${problemTitle}".
 
 Student Question: "${question}"
-${code ? `Student Code: \`\`\`\n${code}\n\`\`\`` : ''}
+${code ? `Student Code:\n\`\`\`\n${code}\n\`\`\`` : ''}
 
-This is the FIRST hint, so be very subtle and encouraging. Don't give away the solution or approach.
-Focus on:
+This is the FIRST hint, so be very subtle and encouraging. Format your response clearly using markdown:
+
+## 💡 First Hint
+
+Provide subtle guidance focusing on:
 - Understanding what the problem is asking for
 - Identifying the key concepts involved
 - Encouraging the student to think about the problem differently
 
-Keep it brief, encouraging, and very subtle. Don't mention specific algorithms or data structures yet.`;
+**Keep it brief, encouraging, and very subtle.** Don't mention specific algorithms or data structures yet.
+
+Use markdown formatting with headers (##), **bold** text for emphasis, and bullet points (-) where helpful.`;
     
     const result = await this.model.generateContent(prompt);
     const response = await result.response;
@@ -149,24 +154,116 @@ Be direct about the approach but don't provide the complete code solution yet.`;
 
   // Generate full solution (after 3 hints)
   async _generateFullSolution(problemTitle, question, code) {
-    const prompt = `You are providing the COMPLETE SOLUTION for the programming problem "${problemTitle}".
+    // Detect the programming language from the question or code
+    let language = 'python'; // default
+    if (question.toLowerCase().includes('javascript') || question.toLowerCase().includes('js') || 
+        (code && (code.includes('const ') || code.includes('function') || code.includes('=>')))) {
+      language = 'javascript';
+    } else if (question.toLowerCase().includes('java') || 
+               (code && (code.includes('public class') || code.includes('public static')))) {
+      language = 'java';
+    } else if (question.toLowerCase().includes('python') || question.toLowerCase().includes('py') ||
+               (code && (code.includes('def ') || code.includes('python')))) {
+      language = 'python';
+    } else if (question.toLowerCase().includes('c++') || question.toLowerCase().includes('cpp') ||
+               (code && (code.includes('#include') || code.includes('int main')))) {
+      language = 'cpp';
+    }
+
+    const prompt = `You are providing the COMPLETE SOLUTION for the programming problem "${problemTitle}" in ${language.toUpperCase()}.
 
 Student Question: "${question}"
-${code ? `Student Code: \`\`\`\n${code}\n\`\`\`` : ''}
+${code ? `Student Code:\n\`\`\`${language}\n${code}\n\`\`\`` : ''}
 
-Since this is the 4th or later request, provide a complete, detailed solution including:
-1. **Complete Algorithm Explanation**: Step-by-step breakdown
-2. **Full Code Solution**: Complete working code in multiple languages
-3. **Time & Space Complexity Analysis**: Detailed performance analysis
-4. **Edge Cases**: Important edge cases to consider
-5. **Alternative Approaches**: Other ways to solve this problem
-6. **Learning Points**: Key concepts demonstrated
+IMPORTANT: Focus ONLY on ${language.toUpperCase()} language. Provide a correct, working solution specifically for this language.
 
-Make this comprehensive and educational. Include complete code solutions.`;
+## 📋 Problem Analysis
+Briefly explain what the problem is asking for.
+
+## 🎯 Solution Approach
+Step-by-step explanation of the algorithm.
+
+## 💻 ${language.toUpperCase()} Solution
+\`\`\`${language}
+${this._getTemplateSolution(problemTitle, language)}
+\`\`\`
+
+## 🔍 How It Works
+1. Explain each key step
+2. Walk through with an example
+3. Highlight important concepts
+
+## ⚡ Complexity Analysis
+- **Time Complexity**: O(?)
+- **Space Complexity**: O(?)
+
+## 🧪 Test With Examples
+Show how the solution works with the given test cases.
+
+Use proper markdown formatting for readability and copyable code blocks.`;
     
     const result = await this.model.generateContent(prompt);
     const response = await result.response;
     return response.text();
+  }
+
+  // Get template solution based on problem and language
+  _getTemplateSolution(problemTitle, language) {
+    if (problemTitle.toLowerCase().includes('two sum')) {
+      switch (language) {
+        case 'python':
+          return `def twoSum(nums, target):
+    num_map = {}
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in num_map:
+            return [num_map[complement], i]
+        num_map[num] = i
+    return []`;
+        
+        case 'javascript':
+          return `const twoSum = function(nums, target) {
+    const numMap = {};
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        if (numMap.hasOwnProperty(complement)) {
+            return [numMap[complement], i];
+        }
+        numMap[nums[i]] = i;
+    }
+    return [];
+};`;
+        
+        case 'java':
+          return `public int[] twoSum(int[] nums, int target) {
+    Map<Integer, Integer> numMap = new HashMap<>();
+    for (int i = 0; i < nums.length; i++) {
+        int complement = target - nums[i];
+        if (numMap.containsKey(complement)) {
+            return new int[]{numMap.get(complement), i};
+        }
+        numMap.put(nums[i], i);
+    }
+    return new int[0];
+}`;
+        
+        case 'cpp':
+          return `vector<int> twoSum(vector<int>& nums, int target) {
+    unordered_map<int, int> numMap;
+    for (int i = 0; i < nums.size(); i++) {
+        int complement = target - nums[i];
+        if (numMap.find(complement) != numMap.end()) {
+            return {numMap[complement], i};
+        }
+        numMap[nums[i]] = i;
+    }
+    return {};
+}`;
+      }
+    }
+    
+    // Default template for unknown problems
+    return `// Complete working ${language} solution will be provided here`;
   }
 
   // Clean up old hint sessions
