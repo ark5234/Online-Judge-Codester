@@ -103,11 +103,39 @@ app.get('/api/debug', (req, res) => {
     environment: process.env.NODE_ENV,
     mongoUri: process.env.MONGO_URI ? 'Set' : 'Not Set',
     redisUrl: process.env.REDIS_URL ? 'Set' : 'Not Set',
+    compilerUrl: process.env.COMPILER_SERVICE_URL || 'Not Set',
     mongoConnection: mongoose.connection.readyState === 1 ? 'Connected' : 'Not Connected',
     redisConnection: redis.status === 'ready' ? 'Connected' : 'Not Connected',
     redisStatus: redis.status,
     mongoReadyState: mongoose.connection.readyState
   });
+});
+
+// Test compiler connectivity from Render
+app.get('/api/debug/compiler', async (req, res) => {
+  try {
+    const compilerUrl = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
+    console.log('Testing compiler connection to:', compilerUrl);
+    
+    const response = await axios.get(`${compilerUrl}/health`, {
+      timeout: 10000
+    });
+    
+    res.json({
+      success: true,
+      compilerUrl: compilerUrl,
+      response: response.data,
+      status: response.status
+    });
+  } catch (error) {
+    console.error('Compiler test failed:', error.message);
+    res.json({
+      success: false,
+      compilerUrl: process.env.COMPILER_SERVICE_URL || 'Not Set',
+      error: error.message,
+      code: error.code
+    });
+  }
 });
 
 // Test MongoDB connection endpoint
