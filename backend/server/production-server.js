@@ -1310,8 +1310,7 @@ app.delete('/api/admin/users/:userId', authenticateToken, requireAdmin, async (r
 });
 
 // TEMP: Seed problems in production (remove after use!)
-const requireAdmin = require('./middleware/auth').requireAdmin;
-app.post('/api/admin/seed-problems', requireAdmin, async (req, res) => {
+app.post('/api/admin/seed-problems', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const seedProblems = require('./seed-problems');
     await seedProblems();

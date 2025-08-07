@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node production-server.js",
     "dev": "nodemon production-server.js",
-    "seed": "node seed-problems.js"
+    "seed": "node seed-problems.js",
+    "syntax-check": "node -c production-server.js",
+    "test-mongo": "node test-mongo-connection.js"
   },
   "keywords": [],
   "author": "",
