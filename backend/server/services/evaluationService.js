@@ -208,9 +208,10 @@ public class Main {
       const response = await axios.get(`${this.compilerUrl}/health`, {
         timeout: 5000
       });
-      return response.data.status === 'OK';
+      // Handle both 'OK' and 'healthy' status responses
+      return response.data.status === 'OK' || response.data.status === 'healthy';
     } catch (error) {
-      console.error('Compiler health check failed:', error);
+      console.error('Compiler health check failed:', error.message);
       return false;
     }
   }
