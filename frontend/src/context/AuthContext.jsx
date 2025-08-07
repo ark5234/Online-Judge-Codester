@@ -13,6 +13,9 @@ export const AuthProvider = ({ children }) => {
       const userData = await account.get();
       setUser(userData);
       
+      // Store user data in localStorage for API services
+      localStorage.setItem('user', JSON.stringify(userData));
+      
       // Check if user is admin (you can customize this logic based on your needs)
       // For now, we'll check if the email contains 'admin' or if there's a custom attribute
       const isAdminUser = userData.email?.includes('admin') || 
@@ -24,6 +27,9 @@ export const AuthProvider = ({ children }) => {
       console.log("User not authenticated:", error);
       setUser(null);
       setIsAdmin(false);
+      // Clear localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
     } finally {
       setLoading(false);
     }
@@ -34,11 +40,16 @@ export const AuthProvider = ({ children }) => {
       await account.deleteSession("current");
       setUser(null);
       setIsAdmin(false);
+      // Clear localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
     } catch (error) {
       console.error("Logout error:", error);
       // Force clear user state even if session deletion fails
       setUser(null);
       setIsAdmin(false);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
     }
   };
 

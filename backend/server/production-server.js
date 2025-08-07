@@ -1330,6 +1330,134 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Seed database endpoint (admin only or with seed key for initial setup)
+app.post('/api/admin/seed-database', async (req, res) => {
+  try {
+    const { seedKey } = req.body;
+    
+    // Allow with special seed key or admin authentication
+    const hasSeedKey = seedKey === 'SEED_DB_2024';
+    let isAdmin = false;
+    
+    if (!hasSeedKey) {
+      // Require admin authentication if no seed key
+      try {
+        await authenticateToken(req, res, () => {});
+        await requireAdmin(req, res, () => {});
+        isAdmin = true;
+      } catch (error) {
+        return res.status(401).json({
+          error: 'Admin authentication required',
+          message: 'Use seedKey or admin token to seed database'
+        });
+      }
+    }
+    
+    // Check if problems already exist
+    const existingProblems = await Problem.countDocuments();
+    
+    if (existingProblems > 0) {
+      return res.json({
+        success: false,
+        message: 'Database already contains problems',
+        problemCount: existingProblems
+      });
+    }
+    
+    // Sample problems to seed
+    const problems = [
+      {
+        title: "Two Sum",
+        description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
+        difficulty: "Easy",
+        category: "Array",
+        tags: ["array", "hash-table"],
+        testCases: [
+          {
+            input: "[2,7,11,15]\n9",
+            output: "[0,1]",
+            isHidden: false
+          },
+          {
+            input: "[3,2,4]\n6",
+            output: "[1,2]", 
+            isHidden: false
+          },
+          {
+            input: "[3,3]\n6",
+            output: "[0,1]",
+            isHidden: true
+          }
+        ],
+        isActive: true
+      },
+      {
+        title: "Reverse Linked List", 
+        description: "Given the head of a singly linked list, reverse the list, and return the reversed list.",
+        difficulty: "Easy",
+        category: "Linked List",
+        tags: ["linked-list", "recursion"],
+        testCases: [
+          {
+            input: "[1,2,3,4,5]",
+            output: "[5,4,3,2,1]",
+            isHidden: false
+          },
+          {
+            input: "[1,2]", 
+            output: "[2,1]",
+            isHidden: false
+          },
+          {
+            input: "[]",
+            output: "[]",
+            isHidden: true
+          }
+        ],
+        isActive: true
+      },
+      {
+        title: "Word Ladder",
+        description: "A transformation sequence from word beginWord to word endWord using a dictionary wordList is a sequence of words beginWord -> s1 -> s2 -> ... -> sk such that:\n\n- Every adjacent pair of words differs by a single letter.\n- Every si for 1 <= i <= k is in wordList. Note that beginWord does not need to be in wordList.\n- sk == endWord\n\nGiven two words, beginWord and endWord, and a dictionary wordList, return the number of words in the shortest transformation sequence from beginWord to endWord, or 0 if no such sequence exists.",
+        difficulty: "Hard",
+        category: "Graph",
+        tags: ["hash-table", "string", "breadth-first-search"],
+        testCases: [
+          {
+            input: "hit\ncog\n[\"hot\",\"dot\",\"dog\",\"lot\",\"log\",\"cog\"]",
+            output: "5",
+            isHidden: false
+          },
+          {
+            input: "hit\ncog\n[\"hot\",\"dot\",\"dog\",\"lot\",\"log\"]",
+            output: "0",
+            isHidden: false
+          }
+        ],
+        isActive: true
+      }
+    ];
+    
+    // Insert problems
+    const insertedProblems = await Problem.insertMany(problems);
+    
+    res.json({
+      success: true,
+      message: 'Database seeded successfully',
+      problemCount: insertedProblems.length,
+      problems: insertedProblems.map(p => ({ id: p._id, title: p.title }))
+    });
+    
+  } catch (error) {
+    console.error('Seed database error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to seed database',
+      message: error.message
+    });
+  }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ 
