@@ -319,86 +319,25 @@ export default function ProblemDetail() {
     const functionName = prob.title
       .replace(/[^a-zA-Z0-9]/g, '')
       .replace(/^[0-9]/, '')
-      .toLowerCase();
-    
-    // Generate parameter types based on problem examples
-    let paramTypes = [];
-    let returnType = '';
-    
-    if (prob.examples && prob.examples.length > 0) {
-      const example = prob.examples[0];
-      if (example.input && example.output) {
-        // Try to infer types from examples
-        try {
-          const input = JSON.parse(example.input);
-          const output = JSON.parse(example.output);
-          
-          if (Array.isArray(input)) {
-            paramTypes.push('number[]');
-          } else if (typeof input === 'number') {
-            paramTypes.push('number');
-          } else if (typeof input === 'string') {
-            paramTypes.push('string');
-          }
-          
-          if (Array.isArray(output)) {
-            returnType = 'number[]';
-          } else if (typeof output === 'number') {
-            returnType = 'number';
-          } else if (typeof output === 'string') {
-            returnType = 'string';
-          }
-        } catch (e) {
-          // Fallback to default types
-          paramTypes = ['number[]', 'number'];
-          returnType = 'number[]';
-        }
-      }
-    }
-    
-    // Default types if no examples or parsing failed
-    if (paramTypes.length === 0) {
-      paramTypes = ['number[]', 'number'];
-      returnType = 'number[]';
-    }
+      .toLowerCase() || 'solution';
     
     const templates = {
       javascript: `/**
- * @param {${paramTypes.join(', ')}} ${paramTypes.map((type, i) => {
-   const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
-   return paramNames[i] || `param${i + 1}`;
- }).join(', ')}
- * @return {${returnType}}
+ * TODO: Implement your solution here
  */
-const ${functionName} = function(${paramTypes.map((type, i) => {
-  const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
-  return paramNames[i] || `param${i + 1}`;
-}).join(', ')}) {
-    // TODO: Implement your solution here
-    
-    return ${returnType === 'number[]' ? '[]' : returnType === 'number' ? '0' : '""'};
-};`,
+function ${functionName}(nums, target) {
+    // Your code here
+    return [];
+}`,
       
-      python: `from typing import List
-
-class Solution:
-    def ${functionName}(self, ${paramTypes.map((type, i) => {
-  const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
-  return paramNames[i] || `param${i + 1}`;
-}).join(', ')}: ${returnType === 'number[]' ? 'List[int]' : returnType === 'number' ? 'int' : 'str'}) -> ${returnType === 'number[]' ? 'List[int]' : returnType === 'number' ? 'int' : 'str'}:
-        # TODO: Implement your solution here
-        
-        return ${returnType === 'number[]' ? '[]' : returnType === 'number' ? '0' : '""'}`,
+      python: `def ${functionName}(nums, target):
+    # TODO: Implement your solution here
+    return []`,
       
       java: `class Solution {
-    public ${returnType} ${functionName}(${paramTypes.map((type, i) => {
-      const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
-      const paramName = paramNames[i] || `param${i + 1}`;
-      return `${type} ${paramName}`;
-    }).join(', ')}) {
+    public int[] ${functionName}(int[] nums, int target) {
         // TODO: Implement your solution here
-        
-        return ${returnType === 'number[]' ? 'new int[]{}' : returnType === 'number' ? '0' : '""'};
+        return new int[]{};
     }
 }`,
       
@@ -407,14 +346,9 @@ using namespace std;
 
 class Solution {
 public:
-    ${returnType} ${functionName}(${paramTypes.map((type, i) => {
-      const paramNames = ['nums', 'target', 's', 'matrix', 'str', 'arr', 'val', 'key'];
-      const paramName = paramNames[i] || `param${i + 1}`;
-      return `${type} ${paramName}`;
-    }).join(', ')}) {
+    vector<int> ${functionName}(vector<int>& nums, int target) {
         // TODO: Implement your solution here
-        
-        return ${returnType === 'number[]' ? '{}' : returnType === 'number' ? '0' : '""'};
+        return {};
     }
 };`
     };

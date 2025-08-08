@@ -130,6 +130,36 @@ class EvaluationService {
 
   // Wrap user code to make it executable
   wrapCodeForExecution(userCode, language, testCase) {
+    console.log('Wrapping code for execution...');
+    console.log('User code:', userCode);
+    console.log('Language:', language);
+    console.log('Test case:', testCase);
+    
+    // Extract function name from the code dynamically
+    let functionName = 'solution'; // default fallback
+    
+    if (language === 'javascript') {
+        const funcMatch = userCode.match(/function\s+(\w+)\s*\(/);
+        const arrowMatch = userCode.match(/(?:const|let|var)\s+(\w+)\s*=/);
+        if (funcMatch) {
+            functionName = funcMatch[1];
+        } else if (arrowMatch) {
+            functionName = arrowMatch[1];
+        }
+    } else if (language === 'python') {
+        const funcMatch = userCode.match(/def\s+(\w+)\s*\(/);
+        if (funcMatch) {
+            functionName = funcMatch[1];
+        }
+    } else if (language === 'java') {
+        const funcMatch = userCode.match(/public\s+(?:static\s+)?(?:int\[\]|String\[\]|int|String|boolean|long|double)\s+(\w+)\s*\(/);
+        if (funcMatch) {
+            functionName = funcMatch[1];
+        }
+    }
+    
+    console.log('Detected function name:', functionName);
+    
     switch (language) {
       case 'python':
         return `${userCode}
@@ -145,7 +175,7 @@ nums = [int(x.strip()) for x in nums_str.split(',')]
 target = int(lines[1])
 
 # Call function and print result
-result = twoSum(nums, target)
+result = ${functionName}(nums, target)
 print(json.dumps(result))`;
 
       case 'javascript':
@@ -159,7 +189,7 @@ const nums = numsStr.split(',').map(n => parseInt(n.trim()));
 const target = parseInt(input[1]);
 
 // Call function and print result
-const result = twoSum(nums, target);
+const result = ${functionName}(nums, target);
 console.log(JSON.stringify(result));`;
 
       case 'java':
@@ -181,7 +211,7 @@ public class Main {
             int target = sc.nextInt();
             
             Solution sol = new Solution();
-            int[] result = sol.twoSum(nums, target);
+            int[] result = sol.${functionName}(nums, target);
             System.out.println(Arrays.toString(result));
             sc.close();
         } catch (Exception e) {
