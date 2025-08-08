@@ -15,17 +15,11 @@
 
 const crypto = require('crypto');
 
-// Try to load isolated-vm, fallback to vm2 or regular eval with safety measures
-let ivm;
-let useIsolatedVM = true;
+// Use Node.js built-in VM module for safe code execution
+const vm = require('vm');
+let useIsolatedVM = false;
 
-try {
-  ivm = require('isolated-vm');
-  console.log('✅ Using isolated-vm for code execution');
-} catch (error) {
-  console.warn('⚠️ isolated-vm not available, using fallback execution');
-  useIsolatedVM = false;
-}
+console.log('✅ Using Node.js VM module for code execution');
 
 class JavaScriptCompilerService {
   constructor() {
@@ -317,14 +311,12 @@ class JavaScriptCompilerService {
       
       try {
         if (useIsolatedVM && ivm) {
-          // Use isolated-vm for secure execution
-          const isolate = new ivm.Isolate({ memoryLimit: 32 }); // 32MB limit
-          const context = await isolate.createContext();
-          
-          // Add safe console.log
-          await context.global.set('console', new ivm.Reference({
-            log: (...args) => console.log('[Sandbox]', ...args)
-          }));
+          // Use Node.js VM module for secure execution
+          const context = {
+            console: {
+              log: (...args) => console.log('[Sandbox]', ...args)
+            }
+          };
           
           // Prepare the code for execution
           const execCode = `
@@ -342,8 +334,7 @@ class JavaScriptCompilerService {
             })();
           `;
           
-          const script = await isolate.compileScript(execCode);
-          const result = await script.run(context, { timeout });
+          const result = vm.runInNewContext(execCode, context, { timeout });
           
           clearTimeout(timeoutId);
           isolate.dispose();
