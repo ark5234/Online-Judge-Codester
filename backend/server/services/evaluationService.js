@@ -235,13 +235,26 @@ public class Main {
   // Check if compiler service is available
   async checkCompilerHealth() {
     try {
+      console.log('🔍 Checking compiler service health at:', this.compilerUrl);
       const response = await axios.get(`${this.compilerUrl}/health`, {
-        timeout: 5000
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'Codester-Backend/1.0'
+        }
       });
+      
+      console.log('✅ Compiler service response:', response.data);
       // Handle both 'OK' and 'healthy' status responses
-      return response.data.status === 'OK' || response.data.status === 'healthy';
+      const isHealthy = response.data.status === 'OK' || response.data.status === 'healthy';
+      console.log('🏥 Compiler health status:', isHealthy);
+      return isHealthy;
     } catch (error) {
-      console.error('Compiler health check failed:', error.message);
+      console.error('❌ Compiler health check failed:', {
+        url: this.compilerUrl,
+        error: error.message,
+        code: error.code,
+        status: error.response?.status
+      });
       return false;
     }
   }

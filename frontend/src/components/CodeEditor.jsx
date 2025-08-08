@@ -99,36 +99,41 @@ const CodeEditor = ({
     monaco.languages.registerOnTypeFormattingEditProvider('python', {
       autoFormatTriggerCharacters: ['\n'],
       provideOnTypeFormattingEdits(model, position) {
-        const lineContent = model.getLineContent(position.lineNumber - 1).trim();
-        const shouldIndent = lineContent.endsWith(':');
-        const shouldDedent = /^(return|break|continue|pass|raise|else|elif|except|finally)\b/.test(lineContent);
-        
-        let indent = '    '; // Default 4 spaces
-        
-        if (shouldDedent) {
-          // Decrease indentation for control flow keywords
-          indent = '';
-        } else if (shouldIndent) {
-          // Increase indentation after colon
-          indent = '        '; // 8 spaces
-        } else {
-          // Maintain current indentation level
-          const prevLine = position.lineNumber > 1 ? model.getLineContent(position.lineNumber - 1) : '';
-          const prevIndent = prevLine.match(/^\s*/)[0];
-          if (prevIndent && !lineContent.match(/^\s*(else|elif|except|finally)\b/)) {
-            indent = prevIndent;
+        try {
+          const lineContent = model.getLineContent(position.lineNumber - 1).trim();
+          const shouldIndent = lineContent.endsWith(':');
+          const shouldDedent = /^(return|break|continue|pass|raise|else|elif|except|finally)\b/.test(lineContent);
+          
+          let indent = '    '; // Default 4 spaces
+          
+          if (shouldDedent) {
+            // Decrease indentation for control flow keywords
+            indent = '';
+          } else if (shouldIndent) {
+            // Increase indentation after colon
+            indent = '        '; // 8 spaces
+          } else {
+            // Maintain current indentation level
+            const prevLine = position.lineNumber > 1 ? model.getLineContent(position.lineNumber - 1) : '';
+            const prevIndent = prevLine.match(/^\s*/)?.[0] || '';
+            if (prevIndent && !lineContent.match(/^\s*(else|elif|except|finally)\b/)) {
+              indent = prevIndent;
+            }
           }
+          
+          return [{
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: 1,
+              endLineNumber: position.lineNumber,
+              endColumn: 1
+            },
+            text: indent
+          }];
+        } catch (error) {
+          console.warn('Auto-formatting error:', error);
+          return [];
         }
-        
-        return [{
-          range: {
-            startLineNumber: position.lineNumber,
-            startColumn: 1,
-            endLineNumber: position.lineNumber,
-            endColumn: 1
-          },
-          text: indent
-        }];
       }
     });
 

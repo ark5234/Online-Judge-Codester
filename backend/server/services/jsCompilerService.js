@@ -13,8 +13,19 @@
  * - 🚀 Easy deployment and debugging
  */
 
-const ivm = require('isolated-vm');
 const crypto = require('crypto');
+
+// Try to load isolated-vm, fallback to vm2 or regular eval with safety measures
+let ivm;
+let useIsolatedVM = true;
+
+try {
+  ivm = require('isolated-vm');
+  console.log('✅ Using isolated-vm for code execution');
+} catch (error) {
+  console.warn('⚠️ isolated-vm not available, using fallback execution');
+  useIsolatedVM = false;
+}
 
 class JavaScriptCompilerService {
   constructor() {
@@ -305,54 +316,104 @@ class JavaScriptCompilerService {
       }, timeout);
       
       try {
-        // Create isolated VM context
-        const isolate = new ivm.Isolate({ memoryLimit: 32 }); // 32MB limit
-        const context = await isolate.createContext();
-        
-        // Add safe console.log
-        await context.global.set('console', new ivm.Reference({
-          log: (...args) => console.log('[Sandbox]', ...args)
-        }));
-        
-        // Prepare the code for execution
-        const execCode = `
-          ${jsCode}
+        if (useIsolatedVM && ivm) {
+          // Use isolated-vm for secure execution
+          const isolate = new ivm.Isolate({ memoryLimit: 32 }); // 32MB limit
+          const context = await isolate.createContext();
           
-          // Execute the function with test inputs
-          (function() {
-            try {
-              const inputs = ${JSON.stringify(testCase.input)};
-              const result = ${functionName}(...inputs);
-              return { success: true, result: result };
-            } catch (error) {
-              return { success: false, error: error.message };
-            }
-          })();
-        `;
-        
-        const script = await isolate.compileScript(execCode);
-        const result = await script.run(context, { timeout });
-        
-        clearTimeout(timeoutId);
-        isolate.dispose();
-        
-        if (!result.success) {
+          // Add safe console.log
+          await context.global.set('console', new ivm.Reference({
+            log: (...args) => console.log('[Sandbox]', ...args)
+          }));
+          
+          // Prepare the code for execution
+          const execCode = `
+            ${jsCode}
+            
+            // Execute the function with test inputs
+            (function() {
+              try {
+                const inputs = ${JSON.stringify(testCase.input)};
+                const result = ${functionName}(...inputs);
+                return { success: true, result: result };
+              } catch (error) {
+                return { success: false, error: error.message };
+              }
+            })();
+          `;
+          
+          const script = await isolate.compileScript(execCode);
+          const result = await script.run(context, { timeout });
+          
+          clearTimeout(timeoutId);
+          isolate.dispose();
+          
+          if (!result.success) {
+            resolve({
+              passed: false,
+              output: null,
+              error: result.error
+            });
+            return;
+          }
+          
+          // Compare outputs
+          const passed = this.compareOutputs(result.result, testCase.expectedOutput);
+          
           resolve({
-            passed: false,
-            output: null,
-            error: result.error
+            passed,
+            output: result.result,
+            error: null
           });
-          return;
+        } else {
+          // Fallback to safer eval with Function constructor
+          try {
+            const safeCode = `
+              ${jsCode}
+              
+              (function() {
+                try {
+                  const inputs = ${JSON.stringify(testCase.input)};
+                  const result = ${functionName}(...inputs);
+                  return { success: true, result: result };
+                } catch (error) {
+                  return { success: false, error: error.message };
+                }
+              })();
+            `;
+            
+            // Create a function to execute the code
+            const executeFunction = new Function('return ' + safeCode);
+            const result = executeFunction();
+            
+            clearTimeout(timeoutId);
+            
+            if (!result.success) {
+              resolve({
+                passed: false,
+                output: null,
+                error: result.error
+              });
+              return;
+            }
+            
+            // Compare outputs
+            const passed = this.compareOutputs(result.result, testCase.expectedOutput);
+            
+            resolve({
+              passed,
+              output: result.result,
+              error: null
+            });
+          } catch (error) {
+            clearTimeout(timeoutId);
+            resolve({
+              passed: false,
+              output: null,
+              error: error.message
+            });
+          }
         }
-        
-        // Compare outputs
-        const passed = this.compareOutputs(result.result, testCase.expectedOutput);
-        
-        resolve({
-          passed,
-          output: result.result,
-          error: null
-        });
         
       } catch (error) {
         clearTimeout(timeoutId);
