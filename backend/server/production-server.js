@@ -7,6 +7,9 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 require('dotenv').config();
 
+// Configuration
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'vikrantkawadkar2099@gmail.com';
+
 // Import models
 const User = require('./models/User');
 const Problem = require('./models/Problem');
@@ -430,10 +433,97 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// JWT token exchange endpoint for Appwrite users
+app.post('/api/auth/exchange-token', async (req, res) => {
+  try {
+    const { appwriteToken, userEmail, userName, userAvatar } = req.body;
+    
+    if (!appwriteToken || !userEmail) {
+      return res.status(400).json({ error: 'Appwrite token and user email are required' });
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email: userEmail });
+    
+    if (!user) {
+      user = new User({
+        email: userEmail,
+        name: userName || 'User',
+        avatar: userAvatar || '',
+        password: 'oauth-user-' + Date.now(), // Temporary password for OAuth users
+        role: userEmail === ADMIN_EMAIL ? 'admin' : 'user'
+      });
+      await user.save();
+      console.log('✅ Created new user:', { email: userEmail, role: user.role });
+    } else {
+      // Update existing user's role if they should be admin
+      if (userEmail === ADMIN_EMAIL && user.role !== 'admin') {
+        user.role = 'admin';
+        await user.save();
+        console.log('✅ Updated user to admin:', { email: userEmail, role: user.role });
+      }
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({ 
+      message: 'Token exchange successful', 
+      token, 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isAdmin: user.role === 'admin'
+      }
+    });
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    res.status(500).json({ error: 'Server error during token exchange' });
+  }
+});
+
+// Debug endpoint to check/update user role
+app.post('/api/auth/make-admin', authenticateToken, async (req, res) => {
+  try {
+    const { email } = req.body;
+    const userEmail = email || req.user.email;
+    
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    user.role = 'admin';
+    await user.save();
+    
+    console.log('✅ Made user admin:', { email: userEmail, role: user.role });
+    
+    res.json({ 
+      message: 'User role updated to admin', 
+      user: {
+        email: user.email,
+        role: user.role,
+        isAdmin: user.role === 'admin'
+      }
+    });
+  } catch (error) {
+    console.error('Make admin error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get current user endpoint
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     const user = req.user;
+    
+    console.log('🔍 Current user details:', {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      isAdmin: user.role === 'admin'
+    });
     
     res.json({
       user: {
@@ -1340,8 +1430,72 @@ app.get('/api/admin/stats', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
-// Admin Routes
-app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+// Admin Routes - Use flexible auth that accepts both JWT and Appwrite tokens
+const flexibleAuth = async (req, res, next) => {
+  // Try JWT first
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.userId).select('-__v');
+      
+      if (user && user.isActive) {
+        req.user = user;
+        return next();
+      }
+    } catch (error) {
+      // JWT failed, try Appwrite
+    }
+  }
+  
+  // Try Appwrite token as fallback
+  const appwriteToken = req.headers['x-appwrite-token'];
+  if (appwriteToken) {
+    try {
+      const userData = {
+        email: req.headers['x-user-email'] || 'user@example.com',
+        name: req.headers['x-user-name'] || 'User',
+        avatar: req.headers['x-user-avatar'] || ''
+      };
+
+      // Find or create user
+      let user = await User.findOne({ email: userData.email });
+      
+      if (!user) {
+        user = new User({
+          email: userData.email,
+          name: userData.name,
+          avatar: userData.avatar,
+          password: 'oauth-user-' + Date.now(), // Temporary password for OAuth users
+          role: userData.email === ADMIN_EMAIL ? 'admin' : 'user'
+        });
+        await user.save();
+        console.log('🔐 FlexibleAuth created user:', { email: userData.email, role: user.role });
+      } else {
+        // Update existing user's role if they should be admin
+        if (userData.email === ADMIN_EMAIL && user.role !== 'admin') {
+          user.role = 'admin';
+          await user.save();
+          console.log('🔐 FlexibleAuth updated user to admin:', { email: userData.email, role: user.role });
+        }
+      }
+
+      req.user = user;
+      return next();
+    } catch (error) {
+      console.error('Appwrite auth error:', error);
+    }
+  }
+  
+  return res.status(401).json({ 
+    error: 'Access token required',
+    message: 'Please provide a valid authentication token'
+  });
+};
+
+app.get('/api/admin/users', flexibleAuth, requireAdmin, async (req, res) => {
   try {
     const users = await User.find({}).select('-__v').sort({ createdAt: -1 });
     res.json(users);

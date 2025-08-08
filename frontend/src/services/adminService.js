@@ -9,25 +9,28 @@ class AdminService {
   getAuthHeaders() {
     const token = localStorage.getItem('authToken');
     
-    // If no JWT token, try to get Appwrite session
-    if (!token) {
-      // For now, we'll use a mock approach for Appwrite users
-      // In a real implementation, you'd exchange the Appwrite session for a JWT
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.$id) {
-        return {
-          'Content-Type': 'application/json',
-          'x-appwrite-token': user.$id,
-          'x-user-email': user.email,
-          'x-user-name': user.name,
-          'x-user-avatar': user.avatar || '',
-        };
-      }
+    if (token) {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      };
     }
     
+    // If no JWT token, try to get Appwrite user data for fallback headers
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.$id) {
+      return {
+        'Content-Type': 'application/json',
+        'x-appwrite-token': user.$id,
+        'x-user-email': user.email,
+        'x-user-name': user.name,
+        'x-user-avatar': user.avatar || '',
+      };
+    }
+    
+    // No authentication available
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
     };
   }
 

@@ -133,6 +133,13 @@ const guestAuth = async (req, res, next) => {
 
 // Admin authorization
 const requireAdmin = (req, res, next) => {
+  console.log('🔒 RequireAdmin check:', {
+    hasUser: !!req.user,
+    userEmail: req.user?.email,
+    userRole: req.user?.role,
+    isAdmin: req.user?.role === 'admin'
+  });
+
   if (!req.user) {
     return res.status(401).json({ 
       error: 'Authentication required',
@@ -143,7 +150,7 @@ const requireAdmin = (req, res, next) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ 
       error: 'Admin access required',
-      message: 'You do not have permission to access this resource'
+      message: `You do not have permission to access this resource. Your role: ${req.user.role}`
     });
   }
 

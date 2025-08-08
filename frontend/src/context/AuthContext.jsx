@@ -6,30 +6,90 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUser = async () => {
     try {
+      setLoading(true);
       const userData = await account.get();
       setUser(userData);
       
-      // Store user data in localStorage for API services
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      // Check if user is admin (you can customize this logic based on your needs)
-      // For now, we'll check if the email contains 'admin' or if there's a custom attribute
-      const isAdminUser = userData.email?.includes('admin') || 
-                         userData.$id === 'admin' || 
-                         userData.labels?.includes('admin') ||
-                         userData.email === 'vikrantkawadkar2099@gmail.com';
-      setIsAdmin(isAdminUser);
+      // Exchange Appwrite token for JWT
+      await exchangeAppwriteForJWT(userData);
     } catch (error) {
-      console.log("User not authenticated:", error);
+      console.log('No active session');
       setUser(null);
-      setIsAdmin(false);
-      // Clear localStorage
-      localStorage.removeItem('user');
-      localStorage.removeItem('authToken');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exchangeAppwriteForJWT = async (userData) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      
+      const response = await fetch(`${apiUrl}/auth/exchange-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appwriteToken: userData.$id,
+          userEmail: userData.email,
+          userName: userData.name,
+          userAvatar: userData.avatar || '',
+        }),
+      });
+
+      if (response.ok) {
+        const { token, user } = await response.json();
+        localStorage.setItem('authToken', token);
+        console.log('✅ JWT token obtained successfully');
+        
+        // Update user data with backend user info
+        if (user) {
+          setUser(prev => ({ ...prev, ...user }));
+          localStorage.setItem('user', JSON.stringify({ ...userData, ...user }));
+        }
+      } else {
+        console.warn('⚠️ Failed to exchange Appwrite token for JWT');
+        // Continue without JWT - some features may be limited
+      }
+    } catch (error) {
+      console.error('❌ Error exchanging Appwrite token:', error);
+      // Continue without JWT - some features may be limited
+    }
+  };
+
+  const login = async (email, password) => {
+    try {
+      setLoading(true);
+      await account.createEmailPasswordSession(email, password);
+      await fetchUser();
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Login failed' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (email, password, name) => {
+    try {
+      setLoading(true);
+      await account.create('unique()', email, password, name);
+      await account.createEmailPasswordSession(email, password);
+      await fetchUser();
+      return { success: true };
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Registration failed' 
+      };
     } finally {
       setLoading(false);
     }
@@ -37,44 +97,39 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await account.deleteSession("current");
+      await account.deleteSession('current');
       setUser(null);
-      setIsAdmin(false);
-      // Clear localStorage
-      localStorage.removeItem('user');
       localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     } catch (error) {
-      console.error("Logout error:", error);
-      // Force clear user state even if session deletion fails
-      setUser(null);
-      setIsAdmin(false);
-      localStorage.removeItem('user');
-      localStorage.removeItem('authToken');
+      console.error('Logout error:', error);
     }
   };
 
-  // Listen for URL changes to handle OAuth redirects
   useEffect(() => {
-    const handleUrlChange = () => {
-      // Check if we're returning from OAuth
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('success') || urlParams.get('failure')) {
-        fetchUser();
-      }
-    };
-
-    // Check user on mount and URL changes
     fetchUser();
-    window.addEventListener('popstate', handleUrlChange);
-    
-    return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    fetchUser
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout, fetchUser, isAdmin }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext); 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
