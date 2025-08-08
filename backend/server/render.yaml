@@ -20,6 +20,6 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: COMPILER_SERVICE_URL
-        value: http://codester-compiler-final.centralindia.azurecontainer.io
+        value: http://4.187.155.173:80
       - key: CORS_ORIGIN
         value: https://codester.vercel.app
