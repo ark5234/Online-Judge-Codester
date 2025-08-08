@@ -1,7 +1,7 @@
 services:
   - type: web
     name: codester-backend
-    env: node
+    runtime: node
     buildCommand: npm install
     startCommand: npm start
     envVars:
@@ -20,6 +20,6 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: COMPILER_SERVICE_URL
-        value: http://13.203.97.246:8000
+        value: http://codester-compiler-final.centralindia.azurecontainer.io
       - key: CORS_ORIGIN
         value: https://codester.vercel.app
