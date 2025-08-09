@@ -1,0 +1,11 @@
+{
+  "name": "codester-compiler",
+  "description": "Online Judge Compiler Service",
+  "main": "compiler.py",
+  "scripts": {
+    "start": "python3 compiler.py"
+  },
+  "engines": {
+    "python": "3.9"
+  }
+}
