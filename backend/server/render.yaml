@@ -20,6 +20,6 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: COMPILER_SERVICE_URL
-        value: http://4.224.10.99:80
+        value: https://online-judge-codester-compiler.onrender.com
       - key: CORS_ORIGIN
         value: https://codester.vercel.app
