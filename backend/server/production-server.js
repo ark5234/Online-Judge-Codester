@@ -18,7 +18,8 @@ const Discussion = require('./models/Discussion');
 
 // Import services
 const aiService = require('./services/aiService');
-const evaluationService = require('./services/evaluationService');
+const EvaluationService = require('./services/evaluationService');
+const evaluationService = new EvaluationService();
 
 // Import middleware
 const { authenticateToken, optionalAuth, guestAuth, requireAdmin, createRateLimiter, generateToken, verifyAppwriteToken, mockAuth } = require('./middleware/auth');
@@ -317,17 +318,16 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/stats', async (req, res) => {
   try {
-    const [userStats, problemStats, evaluationStats] = await Promise.all([
+    const [userStats, problemStats] = await Promise.all([
       User.countDocuments(),
-      Problem.countDocuments(),
-      evaluationService.getEvaluationStats()
+      Problem.countDocuments()
     ]);
 
     const stats = {
       users: userStats,
       problems: problemStats,
-      submissions: evaluationStats.totalSubmissions,
-      successRate: evaluationStats.averageAcceptanceRate,
+      submissions: 0,
+      successRate: 0,
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       timestamp: new Date().toISOString()
@@ -907,16 +907,7 @@ app.post('/api/submissions', guestAuth, async (req, res) => {
   try {
     const { problemId, code, language } = req.body;
     
-    // Validate code
-    const validation = evaluationService.validateCode(code, language);
-    if (!validation.isValid) {
-      return res.status(400).json({ 
-        error: 'Code validation failed',
-        details: validation.errors
-      });
-    }
-    
-    // Evaluate submission
+    // Evaluate submission with new triple-strategy approach
     const result = await evaluationService.evaluateSubmission(
       problemId, 
       code, 
