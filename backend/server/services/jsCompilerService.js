@@ -489,4 +489,4 @@ class JavaScriptCompilerService {
   }
 }
 
-module.exports = new JavaScriptCompilerService();
+module.exports = JavaScriptCompilerService;

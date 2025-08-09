@@ -254,6 +254,24 @@ const CodeEditor = ({
     }
   }, [language, onEditorMount, handleEditorError, getLanguageConfig, monacoLanguageMap]);
 
+  // Keep model language in sync when the language prop changes
+  useEffect(() => {
+    try {
+      if (!editorRef.current || !monacoRef.current) return;
+      const model = editorRef.current.getModel?.();
+      if (!model) return;
+      const targetLang = monacoLanguageMap[language] || 'plaintext';
+      const currentLang = model.getLanguageId?.() || '';
+      if (currentLang !== targetLang) {
+        monacoRef.current.editor.setModelLanguage(model, targetLang);
+        // Clear any stale diagnostics when switching languages
+        monacoRef.current.editor.setModelMarkers(model, 'owner', []);
+      }
+    } catch (err) {
+      console.warn('Language sync error:', err);
+    }
+  }, [language, monacoLanguageMap]);
+
   // Memoized editor options for performance
   const editorOptions = useMemo(() => ({
     // Basic editor settings
@@ -406,7 +424,7 @@ const CodeEditor = ({
     >
       <Editor
         height={height}
-        defaultLanguage={monacoLanguageMap[language] || 'javascript'}
+  language={monacoLanguageMap[language] || 'javascript'}
         value={code}
         onChange={handleEditorChange}
         onMount={handleEditorDidMount}
@@ -422,6 +440,19 @@ const CodeEditor = ({
           // Pre-configure Monaco before mounting
           try {
             monaco.editor.setTheme('vs-dark');
+            // Reduce false positives from JS/TS diagnostics when editing non-JS languages
+            if (['python', 'java', 'cpp', 'c', 'csharp', 'php', 'ruby', 'go', 'rust'].includes(language)) {
+              try {
+                monaco.languages?.typescript?.javascriptDefaults?.setDiagnosticsOptions?.({
+                  noSemanticValidation: true,
+                  noSyntaxValidation: true
+                });
+                monaco.languages?.typescript?.typescriptDefaults?.setDiagnosticsOptions?.({
+                  noSemanticValidation: true,
+                  noSyntaxValidation: true
+                });
+              } catch (_) {}
+            }
           } catch (error) {
             console.warn('Monaco pre-mount error:', error);
           }

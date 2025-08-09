@@ -310,6 +310,35 @@ export default function ProblemDetail() {
     editor.focus();
   };
 
+  // Keep Monaco model language in sync with selected language and reduce false diagnostics
+  useEffect(() => {
+    try {
+      if (!editorRef.current || !monacoRef.current) return;
+      const model = editorRef.current.getModel?.();
+      if (!model) return;
+      const current = model.getLanguageId?.();
+      if (current !== language) {
+        monacoRef.current.editor.setModelLanguage(model, language || 'plaintext');
+        monacoRef.current.editor.setModelMarkers(model, 'owner', []);
+      }
+
+      if (language !== 'javascript' && monacoRef.current.languages?.typescript) {
+        try {
+          monacoRef.current.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: true
+          });
+          monacoRef.current.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: true
+          });
+        } catch (_) {}
+      }
+    } catch (e) {
+      console.warn('ProblemDetail language sync error:', e);
+    }
+  }, [language]);
+
   const handleEditorChange = (value) => {
     setCode(value || '');
   };
@@ -697,7 +726,7 @@ public:
                 <div className="h-64 sm:h-80 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
                   <Editor
                     height="100%"
-                    defaultLanguage={language}
+                    language={language}
                     value={code}
                     onChange={handleEditorChange}
                     onMount={handleEditorDidMount}

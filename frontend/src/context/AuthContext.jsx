@@ -12,51 +12,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const userData = await account.get();
       setUser(userData);
-      
-      // Exchange Appwrite token for JWT
-      await exchangeAppwriteForJWT(userData);
     } catch (error) {
       console.log('No active session');
       setUser(null);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const exchangeAppwriteForJWT = async (userData) => {
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      
-      const response = await fetch(`${apiUrl}/auth/exchange-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          appwriteToken: userData.$id,
-          userEmail: userData.email,
-          userName: userData.name,
-          userAvatar: userData.avatar || '',
-        }),
-      });
-
-      if (response.ok) {
-        const { token, user } = await response.json();
-        localStorage.setItem('authToken', token);
-        console.log('✅ JWT token obtained successfully');
-        
-        // Update user data with backend user info
-        if (user) {
-          setUser(prev => ({ ...prev, ...user }));
-          localStorage.setItem('user', JSON.stringify({ ...userData, ...user }));
-        }
-      } else {
-        console.warn('⚠️ Failed to exchange Appwrite token for JWT');
-        // Continue without JWT - some features may be limited
-      }
-    } catch (error) {
-      console.error('❌ Error exchanging Appwrite token:', error);
-      // Continue without JWT - some features may be limited
     }
   };
 
@@ -99,7 +59,6 @@ export const AuthProvider = ({ children }) => {
     try {
       await account.deleteSession('current');
       setUser(null);
-      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
     } catch (error) {
       console.error('Logout error:', error);

@@ -664,7 +664,7 @@ Please try again later.`);
             <div className="flex-1 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
               <Editor
                 height="100%"
-                defaultLanguage={monacoLanguageMap[language]}
+                language={monacoLanguageMap[language]}
                 value={code}
                 onChange={handleEditorChange}
                 onMount={handleEditorDidMount}
