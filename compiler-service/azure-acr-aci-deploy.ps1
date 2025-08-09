@@ -1,0 +1,103 @@
+param(
+  [string]$ResourceGroup = "codester-rg",
+  [string]$Location = "centralindia",
+  [string]$AcrName = "codesteracr$(Get-Random -Minimum 1000 -Maximum 9999)",
+  [string]$ImageName = "codester-compiler",
+  [string]$ImageTag = "latest",
+  [string]$ContainerName = "codester-compiler",
+  [string]$DnsLabel = "codester-compiler-$(Get-Random -Minimum 1000 -Maximum 9999)"
+)
+
+Write-Host "🚀 Deploying compiler-service Docker image to Azure (ACR + ACI)" -ForegroundColor Cyan
+
+# Pre-req checks
+function Ensure-Command {
+  param([string]$cmd, [string]$install)
+  if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+    throw "Missing '$cmd'. Please install: $install"
+  }
+}
+Ensure-Command az "https://learn.microsoft.com/cli/azure/install-azure-cli"
+Ensure-Command docker "https://docs.docker.com/desktop/install/windows-install/"
+
+# Azure login (no-op if already logged in)
+az account show 1>$null 2>$null
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "Logging into Azure..." -ForegroundColor Yellow
+  az login | Out-Null
+}
+
+# Resource group
+Write-Host "Creating resource group $ResourceGroup in $Location..." -ForegroundColor Yellow
+az group create --name $ResourceGroup --location $Location 1>$null
+
+# ACR create or reuse
+Write-Host "Creating Azure Container Registry $AcrName..." -ForegroundColor Yellow
+az acr create --resource-group $ResourceGroup --name $AcrName --sku Basic --admin-enabled true 1>$null
+
+$LoginServer = az acr show --name $AcrName --query loginServer -o tsv
+$AcrUser = az acr credential show -n $AcrName --query username -o tsv
+$AcrPass = az acr credential show -n $AcrName --query passwords[0].value -o tsv
+
+Write-Host "ACR login server: $LoginServer" -ForegroundColor Gray
+
+# Docker build & push
+$fullImage = "$LoginServer/$ImageName:$ImageTag"
+Write-Host "Building Docker image: $fullImage" -ForegroundColor Yellow
+Push-Location (Join-Path $PSScriptRoot ".")
+try {
+  docker build -t $fullImage -f "compiler-service/Dockerfile" .
+  if ($LASTEXITCODE -ne 0) { throw "Docker build failed" }
+
+  Write-Host "Logging into ACR..." -ForegroundColor Yellow
+  docker login $LoginServer -u $AcrUser -p $AcrPass
+
+  Write-Host "Pushing image to ACR..." -ForegroundColor Yellow
+  docker push $fullImage
+  if ($LASTEXITCODE -ne 0) { throw "Docker push failed" }
+}
+finally { Pop-Location }
+
+# Deploy to ACI
+Write-Host "Deploying ACI $ContainerName with DNS label $DnsLabel..." -ForegroundColor Yellow
+# Delete existing container with same name (optional)
+az container delete --resource-group $ResourceGroup --name $ContainerName --yes 1>$null 2>$null
+
+$envs = @("PORT=8000")
+az container create `
+  --resource-group $ResourceGroup `
+  --name $ContainerName `
+  --image $fullImage `
+  --dns-name-label $DnsLabel `
+  --ports 8000 `
+  --cpu 1 `
+  --memory 2 `
+  --registry-login-server $LoginServer `
+  --registry-username $AcrUser `
+  --registry-password $AcrPass `
+  --environment-variables $envs `
+  --restart-policy Always `
+  --location $Location 1>$null
+
+if ($LASTEXITCODE -ne 0) { throw "ACI creation failed" }
+
+Write-Host "Waiting for the container to start (about 60s)..." -ForegroundColor Yellow
+Start-Sleep -Seconds 60
+
+$fqdn = az container show --resource-group $ResourceGroup --name $ContainerName --query "ipAddress.fqdn" -o tsv
+if (-not $fqdn) { throw "Failed to obtain ACI FQDN." }
+$serviceUrl = "http://$fqdn:8000"
+
+Write-Host "✅ Compiler Service URL: $serviceUrl" -ForegroundColor Green
+"$serviceUrl" | Out-File -FilePath (Join-Path $PSScriptRoot "..\azure-compiler-url.txt") -Encoding UTF8
+
+# Health check
+Write-Host "Probing /health..." -ForegroundColor Yellow
+try {
+  $resp = Invoke-RestMethod -Uri "$serviceUrl/health" -TimeoutSec 15
+  Write-Host "Health: $($resp.status)" -ForegroundColor Green
+} catch {
+  Write-Host "Health check pending; try again in ~30s: $serviceUrl/health" -ForegroundColor Yellow
+}
+
+Write-Host "\nNext: set Render backend env COMPILER_SERVICE_URL to $serviceUrl and redeploy." -ForegroundColor Cyan
