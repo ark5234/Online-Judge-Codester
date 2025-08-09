@@ -78,6 +78,7 @@ az container create `
   --ports 8000 `
   --cpu 1 `
   --memory 2 `
+  --os-type Linux `
   --registry-login-server $LoginServer `
   --registry-username $AcrUser `
   --registry-password $AcrPass `
