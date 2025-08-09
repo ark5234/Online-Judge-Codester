@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: codester-compiler
+    runtime: docker
+    repo: https://github.com/ark5234/Online-Judge-Codester
+    rootDir: ./compiler-service
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 10000
+    
+# This will provide a stable URL like: https://codester-compiler.onrender.com
