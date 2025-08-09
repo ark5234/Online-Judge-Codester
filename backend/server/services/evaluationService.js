@@ -84,45 +84,147 @@ class EvaluationService {
   // Run a single test case
   async runTestCase(code, language, testCase) {
     try {
-      // Wrap user code to make it executable
+      // Try Azure compiler first
       const executableCode = this.wrapCodeForExecution(code, language, testCase);
       
-      const response = await axios.post(`${this.compilerUrl}/execute`, {
-        code: executableCode,
-        language,
-        input: testCase.input
-      }, {
-        timeout: 15000 // 15 second timeout
-      });
+      try {
+        const response = await axios.post(`${this.compilerUrl}/execute`, {
+          code: executableCode,
+          language,
+          input: testCase.input
+        }, {
+          timeout: 10000 // 10 second timeout
+        });
 
-      const result = response.data;
-      
-      if (!result.success) {
+        const result = response.data;
+        
+        if (!result.success) {
+          return {
+            success: false,
+            output: '',
+            error: result.error || 'Compilation error',
+            executionTime: 0
+          };
+        }
+
+        // Compare outputs (normalize for comparison)
+        const expectedOutput = this.normalizeOutput(testCase.output);
+        const actualOutput = this.normalizeOutput(result.output);
+        
         return {
-          success: false,
-          output: '',
-          error: result.error || 'Compilation error',
-          executionTime: 0
+          success: expectedOutput === actualOutput,
+          output: result.output.trim(),
+          error: expectedOutput === actualOutput ? null : `Expected: ${testCase.output}, Got: ${result.output.trim()}`,
+          executionTime: result.execution_time || 100
         };
-      }
 
-      // Compare outputs (normalize for comparison)
-      const expectedOutput = this.normalizeOutput(testCase.output);
-      const actualOutput = this.normalizeOutput(result.output);
-      
-      return {
-        success: expectedOutput === actualOutput,
-        output: result.output.trim(),
-        error: expectedOutput === actualOutput ? null : `Expected: ${testCase.output}, Got: ${result.output.trim()}`,
-        executionTime: result.execution_time || 100
-      };
+      } catch (compilerError) {
+        console.log('⚠️ Azure compiler failed, falling back to local execution...');
+        console.log('Compiler error:', compilerError.message);
+        
+        // Fallback to local execution for JavaScript
+        if (language === 'javascript') {
+          return await this.runLocalJavaScript(executableCode, testCase);
+        } else {
+          // For other languages, return compiler error
+          return {
+            success: false,
+            output: '',
+            error: `Compiler service unavailable: ${compilerError.message}`,
+            executionTime: 0
+          };
+        }
+      }
 
     } catch (error) {
       console.error('Test case execution error:', error);
       return {
         success: false,
         output: '',
-        error: `Compiler service error: ${error.message}`,
+        error: `Execution error: ${error.message}`,
+        executionTime: 0
+      };
+    }
+  }
+
+  // Local JavaScript execution fallback
+  async runLocalJavaScript(executableCode, testCase) {
+    try {
+      console.log('🔄 Running JavaScript locally...');
+      
+      // Create a safe execution environment
+      const vm = require('vm');
+      const util = require('util');
+      
+      // Mock console.log to capture output
+      let output = '';
+      const mockConsole = {
+        log: (...args) => {
+          output += args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+          ).join(' ') + '\n';
+        }
+      };
+      
+      // Mock fs for reading input
+      const mockFs = {
+        readFileSync: (fd, encoding) => {
+          if (fd === 0) { // stdin
+            return testCase.input;
+          }
+          throw new Error('File not found');
+        }
+      };
+      
+      // Create execution context
+      const context = {
+        console: mockConsole,
+        fs: mockFs,
+        require: (module) => {
+          if (module === 'fs') return mockFs;
+          throw new Error(`Module ${module} not available`);
+        },
+        process: {
+          stdin: { fd: 0 }
+        },
+        JSON,
+        Map,
+        Set,
+        Array,
+        Object,
+        parseInt,
+        parseFloat,
+        Math,
+        String,
+        Number,
+        Boolean
+      };
+      
+      // Execute code with timeout
+      const script = new vm.Script(executableCode);
+      vm.createContext(context);
+      
+      const startTime = Date.now();
+      script.runInContext(context, { timeout: 5000 });
+      const executionTime = Date.now() - startTime;
+      
+      // Compare outputs
+      const expectedOutput = this.normalizeOutput(testCase.output);
+      const actualOutput = this.normalizeOutput(output.trim());
+      
+      return {
+        success: expectedOutput === actualOutput,
+        output: output.trim(),
+        error: expectedOutput === actualOutput ? null : `Expected: ${testCase.output}, Got: ${output.trim()}`,
+        executionTime
+      };
+      
+    } catch (error) {
+      console.error('Local JavaScript execution failed:', error);
+      return {
+        success: false,
+        output: '',
+        error: `Local execution failed: ${error.message}`,
         executionTime: 0
       };
     }
@@ -135,24 +237,28 @@ class EvaluationService {
     console.log('Language:', language);
     console.log('Test case:', testCase);
     
-    // Extract function name from the code dynamically
+    // Clean user code by removing test harness
+    const cleanCode = this.cleanUserCode(userCode, language);
+    console.log('Cleaned code:', cleanCode);
+    
+    // Extract function name from the cleaned code
     let functionName = 'solution'; // default fallback
     
     if (language === 'javascript') {
-        const funcMatch = userCode.match(/function\s+(\w+)\s*\(/);
-        const arrowMatch = userCode.match(/(?:const|let|var)\s+(\w+)\s*=/);
+        const funcMatch = cleanCode.match(/function\s+(\w+)\s*\(/);
+        const arrowMatch = cleanCode.match(/(?:const|let|var)\s+(\w+)\s*=/);
         if (funcMatch) {
             functionName = funcMatch[1];
         } else if (arrowMatch) {
             functionName = arrowMatch[1];
         }
     } else if (language === 'python') {
-        const funcMatch = userCode.match(/def\s+(\w+)\s*\(/);
+        const funcMatch = cleanCode.match(/def\s+(\w+)\s*\(/);
         if (funcMatch) {
             functionName = funcMatch[1];
         }
     } else if (language === 'java') {
-        const funcMatch = userCode.match(/public\s+(?:static\s+)?(?:int\[\]|String\[\]|int|String|boolean|long|double)\s+(\w+)\s*\(/);
+        const funcMatch = cleanCode.match(/public\s+(?:static\s+)?(?:int\[\]|String\[\]|int|String|boolean|long|double)\s+(\w+)\s*\(/);
         if (funcMatch) {
             functionName = funcMatch[1];
         }
@@ -162,7 +268,7 @@ class EvaluationService {
     
     switch (language) {
       case 'python':
-        return `${userCode}
+        return `${cleanCode}
 
 # Test execution
 import json
@@ -179,7 +285,7 @@ result = ${functionName}(nums, target)
 print(json.dumps(result))`;
 
       case 'javascript':
-        return `${userCode}
+        return `${cleanCode}
 
 // Test execution
 const fs = require('fs');
@@ -196,7 +302,7 @@ console.log(JSON.stringify(result));`;
         return `import java.util.*;
 import java.io.*;
 
-${userCode}
+${cleanCode}
 
 public class Main {
     public static void main(String[] args) {
@@ -221,8 +327,101 @@ public class Main {
 }`;
 
       default:
-        return userCode;
+        return cleanCode;
     }
+  }
+
+  // Clean user code by removing test harness/driver code
+  cleanUserCode(userCode, language) {
+    let lines = userCode.split('\n');
+    let cleanLines = [];
+    let insideFunction = false;
+    let braceCount = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (language === 'javascript') {
+        // Start of function
+        if (line.includes('function ') || line.match(/^(const|let|var)\s+\w+\s*=/)) {
+          insideFunction = true;
+          cleanLines.push(lines[i]);
+          braceCount += (line.match(/{/g) || []).length;
+          braceCount -= (line.match(/}/g) || []).length;
+          continue;
+        }
+        
+        // Inside function
+        if (insideFunction) {
+          cleanLines.push(lines[i]);
+          braceCount += (line.match(/{/g) || []).length;
+          braceCount -= (line.match(/}/g) || []).length;
+          
+          // End of function
+          if (braceCount <= 0) {
+            insideFunction = false;
+          }
+          continue;
+        }
+        
+        // Skip driver code/test code (common patterns)
+        if (line.includes('console.log') || 
+            line.includes('let arr') || 
+            line.includes('let target') ||
+            line.includes('const arr') || 
+            line.includes('const target') ||
+            line.includes('var arr') || 
+            line.includes('var target') ||
+            line.match(/^(let|const|var)\s+\w+\s*=\s*\[/) ||
+            line.includes('if (') && line.includes('console.log') ||
+            line.includes('else') && line.includes('console.log')) {
+          continue; // Skip this line
+        }
+        
+      } else if (language === 'python') {
+        // Start of function
+        if (line.startsWith('def ')) {
+          insideFunction = true;
+          cleanLines.push(lines[i]);
+          continue;
+        }
+        
+        // Inside function (check indentation)
+        if (insideFunction && (lines[i].startsWith('    ') || lines[i].startsWith('\t') || line === '')) {
+          cleanLines.push(lines[i]);
+          continue;
+        }
+        
+        // End of function
+        if (insideFunction && !lines[i].startsWith('    ') && !lines[i].startsWith('\t') && line !== '') {
+          insideFunction = false;
+        }
+        
+        // Skip driver code
+        if (line.startsWith('arr =') || 
+            line.startsWith('target =') ||
+            line.startsWith('print(') ||
+            line.includes('two_sum(') ||
+            line.includes('solution(')) {
+          continue;
+        }
+      }
+      
+      // For unknown patterns, include the line if we're not clearly in driver code
+      if (!insideFunction) {
+        // Only add if it looks like a function or class definition
+        if (line.includes('function ') || 
+            line.includes('def ') || 
+            line.includes('class ') ||
+            line.includes('//') ||
+            line.includes('#') ||
+            line === '') {
+          cleanLines.push(lines[i]);
+        }
+      }
+    }
+    
+    return cleanLines.join('\n').trim();
   }
 
   // Normalize output for comparison
