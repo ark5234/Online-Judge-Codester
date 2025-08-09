@@ -56,9 +56,17 @@ class DirectExecutionService {
           } else if (language.toLowerCase() === 'java') {
             const executable = this.buildJavaExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
+            // If Java compiler is missing on host, bail to trigger fallback strategies
+            if (executionResult && executionResult.error && /ENOENT|not found/i.test(executionResult.error)) {
+              throw new Error('COMPILER_MISSING: Java compiler unavailable');
+            }
           } else if (language.toLowerCase() === 'cpp' || language.toLowerCase() === 'c++') {
             const executable = this.buildCppExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
+            // If C++ compiler is missing on host, bail to trigger fallback strategies
+            if (executionResult && executionResult.error && /ENOENT|not found/i.test(executionResult.error)) {
+              throw new Error('COMPILER_MISSING: C++ compiler unavailable');
+            }
           } else {
             // Prepare input for the test case
             const input = this.formatInput(this.getTestInput(testCase));
@@ -103,7 +111,11 @@ class DirectExecutionService {
 
         } catch (error) {
           console.error(`❌ Test ${i + 1} execution error:`, error.message);
-          
+          // If the host lacks required compiler/interpreter, propagate error to trigger fallback strategies
+          if (/COMPILER_MISSING/i.test(error.message)) {
+            throw error;
+          }
+
           results.testCases.push({
             input: testCase.input,
             expectedOutput: testCase.expectedOutput,
@@ -145,7 +157,7 @@ class DirectExecutionService {
   buildPythonExecutable(userCode, testInputString) {
     const inputJsonLiteral = JSON.stringify(String(testInputString || ''));
     // Attempt to detect class Solution method or top-level function
-    let funcName = 'solution';
+    let funcName = 'twoSum';
     const classMethodMatch = userCode.match(/class\s+Solution[\s\S]*?def\s+(\w+)\s*\(\s*self\s*,/);
     if (classMethodMatch) {
       funcName = classMethodMatch[1];
@@ -154,7 +166,7 @@ class DirectExecutionService {
       if (defMatch) funcName = defMatch[1];
     }
 
-  const harness = `\n\n# === Codester Harness (auto-generated) ===\nimport json, ast, re\n\n_def_name = ${JSON.stringify(funcName)}\n\ndef __parse_inputs(s):\n    # Try JSON array first (e.g. "[ [2,7,11,15], 9 ]")\n    if isinstance(s, list):\n        return s\n    try:\n        data = json.loads(s)\n        if isinstance(data, list):\n            return data\n    except Exception:\n        pass\n    # Fallback: line-wise values (handles assignments and separators)\n    text = s if isinstance(s, str) else str(s)\n    vals = []\n    for ln in [ln for ln in text.splitlines() if ln.strip()]:\n        parsed = None\n        # Strip common prefixes like 'nums =', 'target ='\n        ln_clean = re.sub(r'^\\s*(\w+)\\s*=\\s*', '', ln)\n        try:\n            parsed = ast.literal_eval(ln_clean)\n        except Exception:\n            parsed = None\n        if parsed is None:\n            try:\n                parsed = json.loads(ln_clean)\n            except Exception:\n                parsed = None\n        if parsed is None and (',' in ln_clean or ' ' in ln_clean or '[' in ln_clean):\n            tokens = [t for t in ln_clean.replace(',', ' ').split() if t]\n            tmp = []\n            for t in tokens:\n                numtxt = re.sub(r"[^0-9\.-]", "", t)\n                if numtxt in ('', '-', '.', '-.', '.-'):\n                    continue\n                try:\n                    if re.fullmatch(r"-?\d+", numtxt):\n                        tmp.append(int(numtxt))\n                    else:\n                        tmp.append(float(numtxt))\n                except Exception:\n                    pass\n            if tmp:\n                parsed = tmp\n        if parsed is None:\n            numtxt = re.sub(r"[^0-9\.-]", "", ln_clean)\n            if numtxt and re.fullmatch(r"-?\d+", numtxt):\n                parsed = int(numtxt)\n            else:\n                try:\n                    parsed = float(numtxt)\n                except Exception:\n                    parsed = ln_clean\n        vals.append(parsed)\n    return vals\n\n__RAW = json.loads(${inputJsonLiteral})\n__ARGS = __parse_inputs(__RAW)\n\n_result = None\ntry:\n    try:\n        _solver = Solution()\n        _fn = getattr(_solver, _def_name)\n        _result = _fn(*__ARGS)\n    except Exception:\n        # Try top-level function\n        _result = globals()[_def_name](*__ARGS)\nexcept Exception as e:\n    import sys\n    print(str(e), file=sys.stderr)\n    raise\n\ntry:\n    print(json.dumps(_result))\nexcept Exception:\n    print(str(_result))\n`;
+    const harness = `\n\n# === Codester Harness (auto-generated) ===\nimport json, ast, re\n\n_def_name = ${JSON.stringify(funcName)}\n\ndef __parse_inputs(s):\n    # Try JSON array first (e.g. "[ [2,7,11,15], 9 ]")\n    if isinstance(s, list):\n        return s\n    text = s if isinstance(s, str) else str(s)\n    try:\n        data = json.loads(text)\n        if isinstance(data, list):\n            return data\n    except Exception:\n        pass\n    # Fallback: line-wise values (handles assignments and separators)\n    vals = []\n    for ln in [ln for ln in text.splitlines() if ln.strip()]:\n        parsed = None\n        # Strip common prefixes like 'nums =', 'target ='\n        ln_clean = re.sub(r'^\\s*(\\w+)\\s*=\\s*', '', ln)\n        try:\n            parsed = ast.literal_eval(ln_clean)\n        except Exception:\n            parsed = None\n        if parsed is None:\n            try:\n                parsed = json.loads(ln_clean)\n            except Exception:\n                parsed = None\n        if parsed is None:\n            tokens = [t for t in ln_clean.replace(',', ' ').split() if t]\n            tmp = []\n            for t in tokens:\n                numtxt = re.sub(r"[^0-9\.-]", "", t)\n                if numtxt in ('', '-', '.', '-.', '.-'):\n                    continue\n                try:\n                    if re.fullmatch(r"-?\d+", numtxt):\n                        tmp.append(int(numtxt))\n                    else:\n                        tmp.append(float(numtxt))\n                except Exception:\n                    pass\n            if tmp:\n                parsed = tmp\n        if parsed is None:\n            numtxt = re.sub(r"[^0-9\.-]", "", ln_clean)\n            if numtxt and re.fullmatch(r"-?\d+", numtxt):\n                parsed = int(numtxt)\n            else:\n                try:\n                    parsed = float(numtxt)\n                except Exception:\n                    parsed = ln_clean\n        vals.append(parsed)\n    # Ultimate fallback: collect integers from whole text -> [nums, target]\n    try:\n        ints = [int(x) for x in re.findall(r'-?\\d+', text)]\n        if len(ints) >= 2:\n            return [ints[:-1], ints[-1]]\n    except Exception:\n        pass\n    return vals\n\n__RAW = json.loads(${inputJsonLiteral})\n__ARGS = __parse_inputs(__RAW)\n\n_result = None\ntry:\n    try:\n        _solver = Solution()\n        _fn = getattr(_solver, _def_name)\n        _result = _fn(*__ARGS)\n    except Exception:\n        # Try top-level function\n        _result = globals()[_def_name](*__ARGS)\nexcept Exception as e:\n    import sys\n    print(str(e), file=sys.stderr)\n    raise\n\ntry:\n    print(json.dumps(_result))\nexcept Exception:\n    print(str(_result))\n`;
 
     return `${userCode}\n${harness}`;
   }
@@ -163,13 +175,17 @@ class DirectExecutionService {
   buildJavaScriptExecutable(userCode, testInputString) {
     const inputJsonLiteral = JSON.stringify(String(testInputString || ''));
     // Try to detect class Solution method or top-level function name
-    let funcName = 'solution';
+    let funcName = 'twoSum';
     const classMethodMatch = userCode.match(/class\s+Solution[\s\S]*?(\w+)\s*\(/);
     if (classMethodMatch) {
       funcName = classMethodMatch[1];
     } else {
       const defMatch = userCode.match(/function\s+(\w+)\s*\(/);
       if (defMatch) funcName = defMatch[1];
+      else {
+        const varMatch = userCode.match(/\b(?:const|let|var)\s+(\w+)\s*=\s*\(?\w*\s*=>/);
+        if (varMatch) funcName = varMatch[1];
+      }
     }
 
   const harness = `\n\n// === Codester Harness (auto-generated) ===\nfunction __parseInputs(s) {\n  try {\n    const data = JSON.parse(s);\n    if (Array.isArray(data)) return data;\n  } catch (_) {}\n  const vals = [];\n  for (const ln of s.replace(/\\r/g, '').split('\\n').map(x => x.trim()).filter(Boolean)) {\n    try { vals.push(JSON.parse(ln)); }\n    catch (_) {\n      const n = Number(ln);\n      if (!Number.isNaN(n)) vals.push(n); else vals.push(ln);\n    }\n  }\n  return vals;\n}\n\nconst __RAW = ${JSON.stringify(String(testInputString || ''))};\nconst __ARGS = __parseInputs(__RAW);\n\nlet __result;\ntry {\n  if (typeof Solution === 'function') {\n    const _solver = new Solution();\n    if (typeof _solver[${JSON.stringify(funcName)}] === 'function') {\n      __result = _solver[${JSON.stringify(funcName)}](...__ARGS);\n    } else {\n      // fall back to top-level function\n      __result = (globalThis[${JSON.stringify(funcName)}] || eval(${JSON.stringify(funcName)}))(...__ARGS);\n    }\n  } else {\n    __result = (globalThis[${JSON.stringify(funcName)}] || eval(${JSON.stringify(funcName)}))(...__ARGS);\n  }\n} catch (e) {\n  console.error(String(e));\n  throw e;\n}\n\ntry {\n  console.log(JSON.stringify(__result));\n} catch (_) {\n  console.log(String(__result));\n}\n`;
@@ -185,7 +201,7 @@ class DirectExecutionService {
     if (m) funcName = m[1];
     const raw = JSON.stringify(String(testInputString || ''));
 
-  const harness = `\n\npublic class Main {\n    static Object[] parse(String s) {\n        // Expect formats like [[2,7,11,15], 9] or similar\n        java.util.List<Integer> nums = new java.util.ArrayList<>();\n        int target = 0;\n        try {\n            String t = s.trim();\n            int lb = t.indexOf('[');\n            int rb = t.indexOf(']');\n            if (lb >= 0 && rb > lb) {\n                String arr = t.substring(lb + 1, rb);\n                for (String part : arr.split(",")) {\n                    part = part.trim().replaceAll("[^-0-9]", "");\n                    if (!part.isEmpty()) nums.add(Integer.parseInt(part));\n                }\n            }\n            // target: prefer after last comma, else last number in string\n            int comma = t.lastIndexOf(',');\n            String tail = (comma >= 0 ? t.substring(comma + 1) : t);\n            String digits = tail.replaceAll("[^-0-9]", "").trim();\n            if (!digits.isEmpty()) target = Integer.parseInt(digits);\n        } catch (Exception e) { /* best effort */ }\n        int[] a = new int[nums.size()];\n        for (int i = 0; i < nums.size(); i++) a[i] = nums.get(i);\n        return new Object[]{ a, target };\n    }\n\n    public static void main(String[] args) throws Exception {\n        String RAW = ` + raw + `;\n        Object[] parsed = parse(RAW);\n        int[] nums = (int[]) parsed[0];\n        int target = (int) parsed[1];\n        Solution sol = new Solution();\n        int[] res = sol.` + funcName + `(nums, target);\n        System.out.println(java.util.Arrays.toString(res).replace(" ", ""));\n    }\n}\n`;
+    const harness = `\n\npublic class Main {\n    static Object[] parse(String s) {\n        // Expect formats like [[2,7,11,15], 9] or similar\n        java.util.List<Integer> nums = new java.util.ArrayList<>();\n        int target = 0;\n        try {\n            String t = s.trim();\n            int lb = t.indexOf('[');\n            int rb = t.indexOf(']');\n            if (lb >= 0 && rb > lb) {\n                String arr = t.substring(lb + 1, rb);\n                for (String part : arr.split(",")) {\n                    part = part.trim().replaceAll("[^-0-9]", "");\n                    if (!part.isEmpty()) nums.add(Integer.parseInt(part));\n                }\n                // target: prefer substring after the closing bracket (supports newline-separated formats)\n                String after = (rb + 1 < t.length()) ? t.substring(rb + 1) : "";\n                String digits = after.replaceAll("[^-0-9]", "").trim();\n                if (!digits.isEmpty()) target = Integer.parseInt(digits);\n            } else {\n                // No bracket: scan all ints, last is target, rest are nums\n                java.util.regex.Matcher m = java.util.regex.Pattern.compile("-?\\\\d+").matcher(t);\n                java.util.List<Integer> all = new java.util.ArrayList<>();\n                while (m.find()) all.add(Integer.parseInt(m.group()));\n                if (all.size() >= 2) { target = all.get(all.size()-1); nums = all.subList(0, all.size()-1); }\n            }\n        } catch (Exception e) { /* best effort */ }\n        int[] a = new int[nums.size()];\n        for (int i = 0; i < nums.size(); i++) a[i] = nums.get(i);\n        return new Object[]{ a, target };\n    }\n\n    public static void main(String[] args) throws Exception {\n        String RAW = ` + raw + `;\n        Object[] parsed = parse(RAW);\n        int[] nums = (int[]) parsed[0];\n        int target = (int) parsed[1];\n        Solution sol = new Solution();\n        int[] res = sol.` + funcName + `(nums, target);\n        System.out.println(java.util.Arrays.toString(res).replace(" ", ""));\n    }\n}\n`;
 
     // If user code already declares public class Main, don't duplicate
     if (/public\s+class\s+Main\b/.test(userCode)) return userCode;
