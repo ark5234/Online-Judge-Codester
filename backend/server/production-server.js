@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 require('dotenv').config();
 
-// Configuration
+// Configuration - Updated for new compiler service
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'vikrantkawadkar2099@gmail.com';
 
 // Import models
