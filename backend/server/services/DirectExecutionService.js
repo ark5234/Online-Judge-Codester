@@ -54,6 +54,14 @@ class DirectExecutionService {
             const rawInput = this.getTestInputString(testCase);
             const executable = this.buildJavaScriptExecutable(code, rawInput);
             executionResult = await runner.execute(executable, '');
+          } else if (language.toLowerCase() === 'java') {
+            const rawInput = this.getTestInputString(testCase);
+            const executable = this.buildJavaExecutable(code, rawInput);
+            executionResult = await runner.execute(executable, '');
+          } else if (language.toLowerCase() === 'cpp' || language.toLowerCase() === 'c++') {
+            const rawInput = this.getTestInputString(testCase);
+            const executable = this.buildCppExecutable(code, rawInput);
+            executionResult = await runner.execute(executable, '');
           } else {
             // Prepare input for the test case
             const input = this.formatInput(this.getTestInput(testCase));
@@ -138,7 +146,7 @@ class DirectExecutionService {
       if (defMatch) funcName = defMatch[1];
     }
 
-  const harness = `\n\n# === Codester Harness (auto-generated) ===\nimport json, ast\n\n_def_name = ${JSON.stringify(funcName)}\n\ndef __parse_inputs(s: str):\n    # Try JSON array first (e.g. "[ [2,7,11,15], 9 ]")\n    try:\n        data = json.loads(s)\n        if isinstance(data, list):\n            return data\n    except Exception:\n        pass\n    # Fallback: line-wise values (e.g. "[2,7,11,15]\\n9")\n    vals = []\n    for ln in [ln for ln in s.splitlines() if ln.strip()]:\n        try:\n            vals.append(ast.literal_eval(ln))\n        except Exception:\n            try:\n                vals.append(json.loads(ln))\n            except Exception:\n                # keep raw string or int\n                try:\n                    vals.append(int(ln))\n                except Exception:\n                    vals.append(ln)\n    return vals\n\n__RAW = json.loads(${inputJsonLiteral})\n__ARGS = __RAW if isinstance(__RAW, list) else __parse_inputs(__RAW)\n\n_result = None\ntry:\n    try:\n        _solver = Solution()\n        _fn = getattr(_solver, _def_name)\n        _result = _fn(*__ARGS)\n    except Exception:\n        # Try top-level function\n        _result = globals()[_def_name](*__ARGS)\nexcept Exception as e:\n    import sys\n    print(str(e), file=sys.stderr)\n    raise\n\ntry:\n    print(json.dumps(_result))\nexcept Exception:\n    print(str(_result))\n`;
+  const harness = `\n\n# === Codester Harness (auto-generated) ===\nimport json, ast\n\n_def_name = ${JSON.stringify(funcName)}\n\ndef __parse_inputs(s):\n    # Try JSON array first (e.g. "[ [2,7,11,15], 9 ]")\n    if isinstance(s, list):\n        return s\n    try:\n        data = json.loads(s)\n        if isinstance(data, list):\n            return data\n    except Exception:\n        pass\n    # Fallback: line-wise values (handles "[2,7,11,15]\\n9" or "2 7 11 15\\n9")\n    text = s if isinstance(s, str) else str(s)\n    vals = []\n    for idx, ln in enumerate([ln for ln in text.splitlines() if ln.strip()]):\n        parsed = None\n        try:\n            parsed = ast.literal_eval(ln)\n        except Exception:\n            parsed = None\n        if parsed is None:\n            try:\n                parsed = json.loads(ln)\n            except Exception:\n                parsed = None\n        if parsed is None and (',' in ln or ' ' in ln):\n            tokens = [t for t in ln.replace(',', ' ').split() if t]\n            try:\n                tmp = []\n                for t in tokens:\n                    if t.lstrip('-').isdigit():\n                        tmp.append(int(t))\n                    else:\n                        tmp.append(float(t))\n                parsed = tmp\n            except Exception:\n                parsed = tokens\n        if parsed is None:\n            try:\n                parsed = int(ln)\n            except Exception:\n                try:\n                    parsed = float(ln)\n                except Exception:\n                    parsed = ln\n        vals.append(parsed)\n    return vals\n\n__RAW = json.loads(${inputJsonLiteral})\n__ARGS = __parse_inputs(__RAW)\n\n_result = None\ntry:\n    try:\n        _solver = Solution()\n        _fn = getattr(_solver, _def_name)\n        _result = _fn(*__ARGS)\n    except Exception:\n        # Try top-level function\n        _result = globals()[_def_name](*__ARGS)\nexcept Exception as e:\n    import sys\n    print(str(e), file=sys.stderr)\n    raise\n\ntry:\n    print(json.dumps(_result))\nexcept Exception:\n    print(str(_result))\n`;
 
     return `${userCode}\n${harness}`;
   }
@@ -161,6 +169,32 @@ class DirectExecutionService {
     return `${userCode}\n${harness}`;
   }
 
+  // Build a Java harness that wraps user's Solution and runs with embedded input
+  buildJavaExecutable(userCode, testInputString) {
+    // Determine method name, default twoSum
+    let funcName = 'twoSum';
+    const m = userCode.match(/\b(\w+)\s*\(\s*int\s*\[\s*]\s*\w+\s*,\s*int\s*\w+\s*\)/);
+    if (m) funcName = m[1];
+    const raw = JSON.stringify(String(testInputString || ''));
+
+    const harness = `\n\nimport java.util.*;\n\npublic class Main {\n    static Object[] parse(String s) {\n        // Expect formats like [[2,7,11,15], 9] or lines\n        List<Integer> nums = new ArrayList<>();\n        int target = 0;\n        try {\n            String t = s.trim();\n            int lb = t.indexOf('[');\n            int rb = t.indexOf(']');\n            if (lb >= 0 && rb > lb) {\n                String arr = t.substring(lb + 1, rb);\n                for (String part : arr.split(",")) {\n                    part = part.trim();\n                    if (!part.isEmpty()) nums.add(Integer.parseInt(part));\n                }\n            }\n            int comma = t.lastIndexOf(',');\n            if (comma >= 0) {\n                String tail = t.substring(comma + 1).replaceAll("[^-0-9]", "").trim();\n                if (!tail.isEmpty()) target = Integer.parseInt(tail);\n            } else {\n                // line-wise fallback\n                String[] lines = t.split("\\r?\\n");\n                if (lines.length >= 2) {\n                    String arr = lines[0];\n                    arr = arr.replaceAll("[\\\\[\\\\]]", "");\n                    for (String part : arr.split(",| ")) {\n                        part = part.trim();\n                        if (!part.isEmpty()) nums.add(Integer.parseInt(part));\n                    }\n                    String tail = lines[1].replaceAll("[^-0-9]", "").trim();\n                    if (!tail.isEmpty()) target = Integer.parseInt(tail);\n                }\n            }\n        } catch (Exception e) { /* best effort */ }\n        int[] a = new int[nums.size()];\n        for (int i = 0; i < nums.size(); i++) a[i] = nums.get(i);\n        return new Object[]{ a, target };\n    }\n\n    public static void main(String[] args) throws Exception {\n        String RAW = ` + raw + `;\n        Object[] parsed = parse(RAW);\n        int[] nums = (int[]) parsed[0];\n        int target = (int) parsed[1];\n        Solution sol = new Solution();\n        int[] res = sol.` + funcName + `(nums, target);\n        System.out.println(Arrays.toString(res).replace(" ", ""));\n    }\n}\n`;
+
+    // If user code already declares public class Main, don't duplicate
+    if (/public\s+class\s+Main\b/.test(userCode)) return userCode;
+    return `${userCode}\n${harness}`;
+  }
+
+  // Build a C++ harness that wraps user's Solution and runs with embedded input
+  buildCppExecutable(userCode, testInputString) {
+    const raw = String(testInputString || '');
+    const rawEsc = raw.replace(/\\/g, "\\\\").replace(/`/g, "\\`");
+    const harness = `\n\n#include <bits/stdc++.h>\nusing namespace std;\n\nstatic vector<int> parseNums(const string &s){\n    vector<int> v;\n    size_t lb = s.find('['), rb = s.find(']');\n    if (lb != string::npos && rb != string::npos && rb > lb){\n        string arr = s.substr(lb+1, rb-lb-1);\n        string num;\n        stringstream ss(arr);\n        while (getline(ss, num, ',')) {\n            try { v.push_back(stoi(string(std::regex_replace(num, std::regex("[^-0-9]"), "")))); } catch(...) {}\n        }\n    }\n    return v;\n}\n\nstatic int parseTarget(const string &s){\n    // take last number\n    int sign = 1; long long val = 0; bool has=false;\n    for (int i = (int)s.size()-1; i>=0; --i){\n        if (isdigit(s[i])){ has=true; val = (s[i]-'0') + val*10; }\n        else if (s[i]=='-'){ sign=-1; break; }\n        else if (has) break;\n    }\n    return (int)(sign * val);\n}\n\nint main(){\n    string RAW = R"(` + rawEsc + `)";\n    vector<int> nums = parseNums(RAW);\n    int target = parseTarget(RAW);\n    Solution sol;\n    auto res = sol.twoSum(nums, target);\n    cout << "[";\n    for (size_t i=0;i<res.size();++i){ if(i) cout << ","; cout << res[i]; }\n    cout << "]";\n    return 0;\n}\n`;
+
+    // If a main already exists, return user code
+    if (/\bint\s+main\s*\(/.test(userCode)) return userCode;
+    return `${userCode}\n${harness}`;
+  }
+
   formatInput(input) {
     if (Array.isArray(input)) {
       return input.map(item => 
@@ -171,20 +205,15 @@ class DirectExecutionService {
   }
 
   compareOutputs(actual, expected) {
-    // Direct deep-compare if expected is array/object
+    // If expected provided as actual array/object, deep-compare
     if (expected && (Array.isArray(expected) || typeof expected === 'object')) {
       const aStr = (actual ?? '').toString().trim();
       try {
         let aj;
-        try {
-          aj = JSON.parse(aStr);
-        } catch (_) {
-          aj = JSON.parse(aStr.replace(/'/g, '"'));
-        }
+        try { aj = JSON.parse(aStr); }
+        catch { aj = JSON.parse(aStr.replace(/'/g, '"')); }
         return JSON.stringify(aj) === JSON.stringify(expected);
-      } catch (_) {
-        return false;
-      }
+      } catch { return false; }
     }
 
     const a = (actual ?? '').toString().trim();
@@ -195,22 +224,25 @@ class DirectExecutionService {
       return Number(a) === Number(e);
     }
 
-    // Try JSON/array/object compare when expected is a JSON string
+    // If either looks like JSON, try JSON deep compare
     const looksJson = (s) => (s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'));
-    if (looksJson(e)) {
+    if (looksJson(e) || looksJson(a)) {
       try {
-        const ej = JSON.parse(e);
-        let aj;
-        try {
-          aj = JSON.parse(a);
-        } catch (_) {
-          // Try to coerce Python repr like "[1, 2]" by replacing single quotes
-          aj = JSON.parse(a.replace(/'/g, '"'));
+        const ej = looksJson(e) ? JSON.parse(e) : e;
+        let aj = looksJson(a) ? JSON.parse(a) : a;
+        if (!looksJson(a) && typeof aj === 'string') {
+          aj = JSON.parse(aj.replace(/'/g, '"'));
         }
         return JSON.stringify(aj) === JSON.stringify(ej);
-      } catch (_) {
-        // fall through to string compare
-      }
+      } catch { /* continue */ }
+    }
+
+    // Fallback: compare numeric sequences ignoring separators
+    const extractNums = (s) => (s.match(/-?\d+(?:\.\d+)?/g) || []).map(v => Number(v));
+    const ea = extractNums(e);
+    const aa = extractNums(a);
+    if (ea.length && aa.length) {
+      return JSON.stringify(aa) === JSON.stringify(ea);
     }
 
     return a === e;
