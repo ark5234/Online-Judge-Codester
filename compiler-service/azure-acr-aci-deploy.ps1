@@ -39,14 +39,20 @@ $LoginServer = az acr show --name $AcrName --query loginServer -o tsv
 $AcrUser = az acr credential show -n $AcrName --query username -o tsv
 $AcrPass = az acr credential show -n $AcrName --query passwords[0].value -o tsv
 
+if ($LoginServer) { $LoginServer = $LoginServer.Trim() }
 Write-Host "ACR login server: $LoginServer" -ForegroundColor Gray
 
-# Docker build & push
-$fullImage = "$LoginServer/$ImageName:$ImageTag"
+# Docker build & push (use absolute paths)
+$fullImage = "$LoginServer/${ImageName}:${ImageTag}"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$DockerfilePath = Join-Path $ScriptDir "Dockerfile"
+$BuildContext = $ScriptDir
 Write-Host "Building Docker image: $fullImage" -ForegroundColor Yellow
-Push-Location (Join-Path $PSScriptRoot ".")
+Write-Host "Dockerfile: $DockerfilePath" -ForegroundColor Gray
+Write-Host "Context:    $BuildContext" -ForegroundColor Gray
+Push-Location $BuildContext
 try {
-  docker build -t $fullImage -f "compiler-service/Dockerfile" .
+  docker build -t $fullImage -f "$DockerfilePath" "$BuildContext"
   if ($LASTEXITCODE -ne 0) { throw "Docker build failed" }
 
   Write-Host "Logging into ACR..." -ForegroundColor Yellow
