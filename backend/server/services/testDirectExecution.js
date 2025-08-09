@@ -70,6 +70,32 @@ class Solution:
     console.error('❌ Python Test failed:', error.message);
   }
 
+  // Test Java
+  const javaCode = `
+import java.util.*;
+
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        Map<Integer, Integer> numMap = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            int complement = target - nums[i];
+            if (numMap.containsKey(complement)) {
+                return new int[] { numMap.get(complement), i };
+            }
+            numMap.put(nums[i], i);
+        }
+        return new int[] {};
+    }
+}
+`;
+
+  try {
+    const resultJava = await directExecutor.evaluateSubmission('test123', javaCode, 'java', 'testuser');
+    console.log('☕ Java Results:', JSON.stringify(resultJava, null, 2));
+  } catch (error) {
+    console.error('❌ Java Test failed:', error.message);
+  }
+
   // Now test with DB-like string cases
   const mockProblemModelStr = {
     findById: () => Promise.resolve({
@@ -90,6 +116,13 @@ class Solution:
     console.log('🐍 Python String-IO Results:', JSON.stringify(pyStr, null, 2));
   } catch (e) {
     console.error('❌ Python String-IO Test failed:', e.message);
+  }
+
+  try {
+    const javaStr = await directExecutorStr.evaluateSubmission('testSTR', javaCode, 'java', 'testuser');
+    console.log('☕ Java String-IO Results:', JSON.stringify(javaStr, null, 2));
+  } catch (e) {
+    console.error('❌ Java String-IO Test failed:', e.message);
   }
 }
 

@@ -12,14 +12,24 @@ class JavaRunner extends BaseRunner {
   }
 
   async execute(code, input = '') {
-    const className = this.extractClassName(code);
-    const javaFile = this.createTempFile(code, '.java');
-    const classFile = javaFile.replace('.java', '.class');
+    // If our harness defines `public class Main`, we must compile a file named Main.java
+    // Otherwise Java will fail with: "class Main is public, should be declared in a file named Main.java"
+    const forceMain = /public\s+class\s+Main\b/.test(code);
+    const className = forceMain ? 'Main' : this.extractClassName(code);
+    const path = require('path');
+    const fs = require('fs');
+    const javaFile = forceMain
+      ? path.join(this.tempDir, `${className}.java`)
+      : this.createTempFile(code, '.java');
+    if (forceMain) {
+      fs.writeFileSync(javaFile, code);
+    }
+    const classFile = path.join(this.tempDir, `${className}.class`);
     
     try {
       // Compile Java code
       console.log('☕ Compiling Java code...');
-      const compileResult = await this.executeWithTimeout('javac', [javaFile]);
+  const compileResult = await this.executeWithTimeout('javac', [javaFile]);
 
       if (compileResult.code !== 0) {
         return {
@@ -57,7 +67,8 @@ class JavaRunner extends BaseRunner {
       };
     } finally {
       // Cleanup files
-      this.cleanup([javaFile, classFile]);
+  // Best-effort cleanup (java may produce multiple .class files)
+  try { this.cleanup([javaFile, classFile]); } catch (_) {}
     }
   }
 }
