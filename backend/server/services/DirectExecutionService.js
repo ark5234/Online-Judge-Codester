@@ -46,21 +46,18 @@ class DirectExecutionService {
         try {
           // Build executable code or input per language
           let executionResult;
+          let rawInputString = this.getTestInputString(testCase);
           if (language.toLowerCase() === 'python') {
-            const rawInput = this.getTestInputString(testCase);
-            const executable = this.buildPythonExecutable(code, rawInput);
+            const executable = this.buildPythonExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
           } else if (language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js') {
-            const rawInput = this.getTestInputString(testCase);
-            const executable = this.buildJavaScriptExecutable(code, rawInput);
+            const executable = this.buildJavaScriptExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
           } else if (language.toLowerCase() === 'java') {
-            const rawInput = this.getTestInputString(testCase);
-            const executable = this.buildJavaExecutable(code, rawInput);
+            const executable = this.buildJavaExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
           } else if (language.toLowerCase() === 'cpp' || language.toLowerCase() === 'c++') {
-            const rawInput = this.getTestInputString(testCase);
-            const executable = this.buildCppExecutable(code, rawInput);
+            const executable = this.buildCppExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
           } else {
             // Prepare input for the test case
@@ -98,6 +95,10 @@ class DirectExecutionService {
             const act = executionResult.output;
             console.log(`❌ Test ${i + 1}/${problem.testCases.length}: FAILED`);
             console.log(`   ↪ expected: ${typeof exp === 'string' ? exp : JSON.stringify(exp)} | actual: ${act}`);
+            if (executionResult.error) {
+              console.log(`   ↪ stderr: ${executionResult.error.substring(0, 300)}`);
+            }
+            try { console.log(`   ↪ rawInput: ${rawInputString}`); } catch {}
           }
 
         } catch (error) {
