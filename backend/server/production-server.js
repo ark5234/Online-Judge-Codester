@@ -811,9 +811,10 @@ app.get('/api/problems/:id', optionalAuth, async (req, res) => {
       return res.status(404).json({ error: 'Problem not found' });
     }
     
-    // Don't send test cases to non-authenticated users
+    // Filter test cases based on authentication
     if (!req.user) {
-      problem.testCases = [];
+      // For non-authenticated users, show only visible test cases
+      problem.testCases = problem.testCases.filter(tc => !tc.isHidden);
     }
     
     res.json({ problem });
@@ -920,17 +921,17 @@ app.post('/api/submissions', guestAuth, async (req, res) => {
       problemId, 
       code, 
       language, 
-      req.user._id
+      req.user._id || 'guest'
     );
     
     // Update user stats (only for authenticated users)
-    if (req.user.role !== 'guest') {
+    if (req.user && req.user.role !== 'guest' && req.user.updateStats) {
       await req.user.updateStats(result);
     }
     
     // Cache result in Redis
     if (redis.status === 'ready') {
-      const cacheKey = `submission:${req.user._id}:${problemId}:${Date.now()}`;
+      const cacheKey = `submission:${req.user._id || 'guest'}:${problemId}:${Date.now()}`;
       await redis.setex(cacheKey, 3600, JSON.stringify(result));
     }
     

@@ -120,13 +120,43 @@ const guestAuth = async (req, res, next) => {
         }
 
         req.user = user;
+      } else {
+        // No authentication provided, create a default guest user
+        req.user = {
+          _id: 'guest-' + Date.now(),
+          email: 'guest@codester.com',
+          name: 'Guest User',
+          avatar: '',
+          role: 'guest',
+          isActive: true,
+          stats: {
+            problemsSolved: 0,
+            currentStreak: 0,
+            totalSubmissions: 0,
+            accuracy: 0
+          }
+        };
       }
     }
     
     next();
   } catch (error) {
     console.error('Guest auth error:', error);
-    // Continue without authentication
+    // Create a fallback guest user if anything fails
+    req.user = {
+      _id: 'guest-' + Date.now(),
+      email: 'guest@codester.com',
+      name: 'Guest User',
+      avatar: '',
+      role: 'guest',
+      isActive: true,
+      stats: {
+        problemsSolved: 0,
+        currentStreak: 0,
+        totalSubmissions: 0,
+        accuracy: 0
+      }
+    };
     next();
   }
 };
