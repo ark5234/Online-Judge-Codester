@@ -76,11 +76,12 @@ class EvaluationService {
     for (let i = 0; i < problem.testCases.length; i++) {
       const testCase = problem.testCases[i];
       const testResult = await this.runTestCase(code, language, testCase);
+      const expectedOut = (typeof testCase.expectedOutput !== 'undefined') ? testCase.expectedOutput : testCase.output;
       
       results.testCases.push({
         testCaseId: i + 1,
         input: testCase.input,
-        expectedOutput: testCase.output,
+        expectedOutput: expectedOut,
         actualOutput: testResult.output,
         status: testResult.success ? 'Passed' : 'Failed',
         executionTime: testResult.executionTime,
@@ -133,6 +134,7 @@ class EvaluationService {
   // Prepare executable code with embedded harness per language
   const executableCode = this.wrapCodeForExecution(code, language, testCase);
   const langForRemote = this.normalizeLanguageForRemote(language);
+  const expectedOut = (typeof testCase.expectedOutput !== 'undefined') ? testCase.expectedOutput : testCase.output;
       
       // Try remote compiler first
       try {
@@ -144,9 +146,9 @@ class EvaluationService {
           timeout: 10000 // 10 second timeout
         });
 
-        const executionTime = Date.now() - startTime;
-        const output = response.data.output || '';
-        const success = this.compareOutputs(output.trim(), testCase.expectedOutput);
+  const executionTime = Date.now() - startTime;
+  const output = response.data.output || '';
+  const success = this.compareOutputs(output.trim(), expectedOut);
 
         return {
           success,
@@ -156,8 +158,8 @@ class EvaluationService {
         };
 
       } catch (remoteError) {
-        console.log('Remote compiler failed, falling back to local JavaScript execution...');
-        return await this.runLocalJavaScript(executableCode, testCase);
+  console.log('Remote compiler failed, falling back to local JavaScript execution...');
+  return await this.runLocalJavaScript(executableCode, expectedOut);
       }
 
     } catch (error) {
@@ -171,7 +173,7 @@ class EvaluationService {
   }
 
   // Local JavaScript execution fallback
-  async runLocalJavaScript(executableCode, testCase) {
+  async runLocalJavaScript(executableCode, expectedOut) {
     const { VM } = require('vm2');
     const startTime = Date.now();
     
@@ -183,7 +185,7 @@ class EvaluationService {
       
       const result = vm.run(executableCode);
       const executionTime = Date.now() - startTime;
-      const success = this.compareOutputs(result, testCase.expectedOutput);
+      const success = this.compareOutputs(result, expectedOut);
       
       return {
         success,
