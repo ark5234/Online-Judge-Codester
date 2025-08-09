@@ -47,9 +47,13 @@ class DirectExecutionService {
           // Build executable code or input per language
           let executionResult;
           let rawInputString = this.getTestInputString(testCase);
-          if (language.toLowerCase() === 'python') {
+          if (language.toLowerCase() === 'python' || language.toLowerCase() === 'python3') {
             const executable = this.buildPythonExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
+            // If Python interpreter is missing on host (e.g., Render image), bail to trigger fallback strategies
+            if (executionResult && executionResult.error && /ENOENT|not found/i.test(executionResult.error)) {
+              throw new Error('COMPILER_MISSING: Python interpreter unavailable');
+            }
           } else if (language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js') {
             const executable = this.buildJavaScriptExecutable(code, rawInputString);
             executionResult = await runner.execute(executable, '');
@@ -114,6 +118,10 @@ class DirectExecutionService {
           // If the host lacks required compiler/interpreter, propagate error to trigger fallback strategies
           if (/COMPILER_MISSING/i.test(error.message)) {
             throw error;
+          }
+          // Also detect missing Python interpreter errors (ENOENT) and escalate
+          if ((language.toLowerCase() === 'python' || language.toLowerCase() === 'python3') && /ENOENT|not found/i.test(error.message)) {
+            throw new Error('COMPILER_MISSING: Python interpreter unavailable');
           }
 
           results.testCases.push({

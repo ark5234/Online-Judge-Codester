@@ -130,14 +130,15 @@ class EvaluationService {
     const startTime = Date.now();
     
     try {
-      // Prepare executable code
-      const executableCode = this.wrapCodeForExecution(code, language, testCase);
+  // Prepare executable code with embedded harness per language
+  const executableCode = this.wrapCodeForExecution(code, language, testCase);
+  const langForRemote = this.normalizeLanguageForRemote(language);
       
       // Try remote compiler first
       try {
         const response = await axios.post(`${this.compilerUrl}/execute`, {
           code: executableCode,
-          language: language,
+          language: langForRemote,
           input: ''
         }, {
           timeout: 10000 // 10 second timeout
@@ -221,30 +222,32 @@ class EvaluationService {
 
   // Wrap code for execution
   wrapCodeForExecution(userCode, language, testCase) {
-    // Clean the user code
-    const cleanCode = this.cleanUserCode(userCode, language);
-    
-    // Extract function name
-    let functionName = 'solution';
-    if (language === 'javascript') {
-        const funcMatch = cleanCode.match(/function\s+(\w+)\s*\(/);
-        if (funcMatch) {
-            functionName = funcMatch[1];
-        }
-    }
-    
-    switch (language) {
-      case 'javascript':
-        return `${cleanCode}
+    const lang = (language || '').toLowerCase();
+    const rawInputString = this.directExecutor.getTestInputString(testCase);
+    const cleanCode = this.cleanUserCode(userCode, lang);
 
-// Test execution
-const inputs = ${JSON.stringify(testCase.input)};
-const result = ${functionName}(...inputs);
-result;`;
-
-      default:
-        return cleanCode;
+    if (lang === 'javascript' || lang === 'js') {
+      // Reuse direct executor's JS harness which prints JSON
+      return this.directExecutor.buildJavaScriptExecutable(cleanCode, rawInputString);
     }
+    if (lang === 'python' || lang === 'python3') {
+      return this.directExecutor.buildPythonExecutable(cleanCode, rawInputString);
+    }
+    if (lang === 'java') {
+      return this.directExecutor.buildJavaExecutable(cleanCode, rawInputString);
+    }
+    if (lang === 'cpp' || lang === 'c++') {
+      return this.directExecutor.buildCppExecutable(cleanCode, rawInputString);
+    }
+    return cleanCode;
+  }
+
+  normalizeLanguageForRemote(language) {
+    const l = (language || '').toLowerCase();
+    if (l === 'js') return 'javascript';
+    if (l === 'python3') return 'python';
+    if (l === 'c++') return 'cpp';
+    return l;
   }
 
   // Clean user code (remove test harness)
