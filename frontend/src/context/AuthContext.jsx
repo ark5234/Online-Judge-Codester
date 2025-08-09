@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { account } from "../services/appwrite";
+import { account, restoreJwtFromStorage, setJwt } from "../services/appwrite";
 
 const AuthContext = createContext();
 
@@ -10,6 +10,8 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       setLoading(true);
+  // Ensure JWT is applied if available (fallback when cookies are blocked)
+  restoreJwtFromStorage();
       const userData = await account.get();
       setUser(userData);
     } catch (error) {
@@ -24,6 +26,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await account.createEmailPasswordSession(email, password);
+      // Use JWT for cookie-less auth
+      try {
+        const { jwt } = await account.createJWT();
+        setJwt(jwt);
+      } catch {}
       await fetchUser();
       return { success: true };
     } catch (error) {
@@ -42,6 +49,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       await account.create('unique()', email, password, name);
       await account.createEmailPasswordSession(email, password);
+      // Use JWT for cookie-less auth
+      try {
+        const { jwt } = await account.createJWT();
+        setJwt(jwt);
+      } catch {}
       await fetchUser();
       return { success: true };
     } catch (error) {
@@ -60,13 +72,16 @@ export const AuthProvider = ({ children }) => {
       await account.deleteSession('current');
       setUser(null);
       localStorage.removeItem('user');
+  setJwt(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
   useEffect(() => {
-    fetchUser();
+  // try restore JWT first, then fetch
+  restoreJwtFromStorage();
+  fetchUser();
   }, []);
 
   const value = {

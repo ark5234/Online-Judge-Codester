@@ -1,11 +1,33 @@
 import { Client, Account } from 'appwrite';
 
-const client = new Client();
+export const client = new Client();
 client
   .setEndpoint('https://fra.cloud.appwrite.io/v1')
   .setProject('6881edab0015c849630d');
 
 export const account = new Account(client);
+
+// JWT fallback utilities to work when 3rd-party cookies are blocked
+const JWT_KEY = 'APPWRITE_JWT';
+export function setJwt(jwt) {
+  try {
+    if (jwt) {
+      localStorage.setItem(JWT_KEY, jwt);
+      client.setJWT(jwt);
+    } else {
+      localStorage.removeItem(JWT_KEY);
+      client.setJWT(undefined);
+    }
+  } catch {}
+}
+
+export function restoreJwtFromStorage() {
+  try {
+    const jwt = localStorage.getItem(JWT_KEY);
+    if (jwt) client.setJWT(jwt);
+    return jwt || null;
+  } catch { return null; }
+}
 
 // Production configuration
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api';
