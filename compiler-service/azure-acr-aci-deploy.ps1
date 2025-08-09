@@ -88,12 +88,29 @@ az container create `
 
 if ($LASTEXITCODE -ne 0) { throw "ACI creation failed" }
 
-Write-Host "Waiting for the container to start (about 60s)..." -ForegroundColor Yellow
-Start-Sleep -Seconds 60
+Write-Host "Waiting for the container to start (polling up to ~3 minutes)..." -ForegroundColor Yellow
+$fqdn = ""
+$pubip = ""
+for ($i=0; $i -lt 12; $i++) {
+  $state = az container show --resource-group $ResourceGroup --name $ContainerName --query "instanceView.state" -o tsv
+  $fqdn = az container show --resource-group $ResourceGroup --name $ContainerName --query "ipAddress.fqdn" -o tsv
+  $pubip = az container show --resource-group $ResourceGroup --name $ContainerName --query "ipAddress.ip" -o tsv
+  $state = ($state | Out-String).Trim()
+  $fqdn = ($fqdn | Out-String).Trim()
+  $pubip = ($pubip | Out-String).Trim()
+  Write-Host ("  state={0} fqdn={1} ip={2}" -f ($state ?? ""), ($fqdn ?? ""), ($pubip ?? "")) -ForegroundColor Gray
+  if ($fqdn -or $pubip) { break }
+  Start-Sleep -Seconds 15
+}
 
-$fqdn = az container show --resource-group $ResourceGroup --name $ContainerName --query "ipAddress.fqdn" -o tsv
-if (-not $fqdn) { throw "Failed to obtain ACI FQDN." }
-$serviceUrl = "http://$fqdn:8000"
+if (-not $fqdn -and -not $pubip) {
+  Write-Host "⚠️ Still no FQDN/IP; ACI may be provisioning or DNS not ready. You can fetch later with:" -ForegroundColor Yellow
+  Write-Host "   az container show --resource-group $ResourceGroup --name $ContainerName --query \"ipAddress\"" -ForegroundColor Yellow
+  throw "Failed to obtain ACI endpoint."
+}
+
+if ($fqdn) { $serviceUrl = "http://$fqdn:8000" }
+else { $serviceUrl = "http://$pubip:8000" }
 
 Write-Host "✅ Compiler Service URL: $serviceUrl" -ForegroundColor Green
 "$serviceUrl" | Out-File -FilePath (Join-Path $PSScriptRoot "..\azure-compiler-url.txt") -Encoding UTF8
