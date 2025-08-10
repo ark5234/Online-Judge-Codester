@@ -365,6 +365,27 @@ class JavaScriptCompilerService {
               // Linked list helpers
               function ListNode(val, next){ this.val = val; this.next = next || null; }
               function fromArray(arr){ const d=new ListNode(0); let c=d; for(const v of (arr||[])){ c.next=new ListNode(v); c=c.next; } return d.next; }
+              function toArray(head){ const out=[]; let cur=head; while(cur){ out.push(cur.val); cur=cur.next; } return out; }
+              function __parseInputs(s){
+                try {
+                  const data = (typeof s === 'string') ? JSON.parse(s) : s;
+                  if (Array.isArray(data)){
+                    const flatNums = data.every(x => typeof x === 'number');
+                    return flatNums ? [data] : data;
+                  }
+                } catch(_) {}
+                const text = String(s ?? '');
+                const lines = text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+                const vals = [];
+                for (const ln of lines){
+                  try { vals.push(JSON.parse(ln)); }
+                  catch(_) {
+                    const n = Number(ln);
+                    if (!Number.isNaN(n)) vals.push(n); else vals.push(ln);
+                  }
+                }
+                return vals;
+              }
               function tryCall(funcName, rawInputs){
                 try {
                   return { ok: true, val: (globalThis[funcName] || eval(funcName))(...rawInputs) };
@@ -379,9 +400,12 @@ class JavaScriptCompilerService {
               ${safeCodeBase}
               (function(){
                 try {
-                  const inputs = ${JSON.stringify(testCase.input)};
+                  const inputs = __parseInputs(${JSON.stringify(testCase.input)});
                   const r = tryCall(${JSON.stringify(functionName)}, inputs);
-                  if (r.ok) return { success: true, result: r.val };
+                  if (r.ok) {
+                    const out = (r.val && typeof r.val==='object' && 'val' in r.val && 'next' in r.val) ? toArray(r.val) : r.val;
+                    return { success: true, result: out };
+                  }
                   return { success: false, error: r.err };
                 } catch (error) {
                   return { success: false, error: error.message };
@@ -397,16 +421,19 @@ class JavaScriptCompilerService {
                 ${safeCodeBase}
                 (function(){
                   try {
-                    const inputs = ${JSON.stringify(testCase.input)};
-                    // If inputs is [ [1,2,3] ] or just [1,2,3], normalize to a single ListNode
-                    let args = Array.isArray(inputs) ? inputs : [inputs];
+                    const parsed = __parseInputs(${JSON.stringify(testCase.input)});
+                    // If parsed is [ [1,2,3] ] or flat [1,2,3], normalize to a single ListNode arg
+                    let args = Array.isArray(parsed) ? parsed : [parsed];
                     if (args.length === 1 && Array.isArray(args[0]) && args[0].every(x => typeof x === 'number')) {
                       args = [ fromArray(args[0]) ];
                     } else if (Array.isArray(args) && args.every(x => typeof x === 'number')) {
                       args = [ fromArray(args) ];
                     }
                     const r = tryCall(${JSON.stringify(functionName)}, args);
-                    if (r.ok) return { success: true, result: r.val };
+                    if (r.ok) {
+                      const out = (r.val && typeof r.val==='object' && 'val' in r.val && 'next' in r.val) ? toArray(r.val) : r.val;
+                      return { success: true, result: out };
+                    }
                     return { success: false, error: r.err };
                   } catch (error) {
                     return { success: false, error: error.message };
