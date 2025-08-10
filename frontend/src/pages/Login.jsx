@@ -70,11 +70,7 @@ export default function Login() {
       return;
     }
 
-    if (isAdminMode && !formData.adminCode) {
-      setError("Admin code is required for admin login.");
-      setLoading(false);
-      return;
-    }
+  // Admin code is optional for seeded admins; backend will enforce roles
 
     try {
       // Login using AuthContext (handles Appwrite and backend-token fallback)

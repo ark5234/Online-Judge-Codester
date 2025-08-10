@@ -1801,3 +1801,53 @@ app.listen(PORT, () => {
   console.log(`🚀 Production Server running on port ${PORT}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
 });
+
+// Seed users on demand (guarded by seed key or admin auth)
+app.post('/api/admin/seed-users', async (req, res) => {
+  try {
+    const { seedKey } = req.body || {};
+
+    let isAdmin = false;
+    const validKey = seedKey === (process.env.SEED_USERS_KEY || 'SEED_USERS_2025');
+
+    if (!validKey) {
+      // Try to authorize via admin token
+      try {
+        await requireAdmin(req, res, () => {});
+        isAdmin = true;
+      } catch (_) {
+        // ignore
+      }
+    }
+
+    if (!validKey && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Invalid seed key or admin token required' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const seeds = [DEFAULT_ADMIN_SEED, DEFAULT_ADMIN2_SEED, DEFAULT_USER_SEED];
+    const results = [];
+    for (const seed of seeds) {
+      const existing = await User.findOne({ email: seed.email.toLowerCase() });
+      if (!existing) {
+        const u = new User(seed);
+        await u.save();
+        results.push({ email: seed.email, action: 'created', role: seed.role });
+      } else if (seed.role === 'admin' && existing.role !== 'admin') {
+        existing.role = 'admin';
+        await existing.save();
+        results.push({ email: seed.email, action: 'promoted', role: 'admin' });
+      } else {
+        results.push({ email: seed.email, action: 'skipped', role: existing.role });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('Seed users error:', error);
+    res.status(500).json({ error: 'Failed to seed users' });
+  }
+});
