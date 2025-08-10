@@ -146,10 +146,18 @@ class EvaluationService {
   const response = await this.postWithRetry('/execute', payload, 1, remoteTimeout);
 
   const executionTime = Date.now() - startTime;
-  const output = response.data.output || '';
-  const success = this.compareOutputs(output.trim(), expectedOut);
+  const output = (response.data.output || '').toString();
+  const stderr = (response.data.error || '').toString();
+  // If remote produced stderr, treat as failure regardless of stdout
+  let success;
+  if (stderr.trim()) {
+    success = false;
+  } else {
+    success = this.compareOutputs(output.trim(), expectedOut);
+  }
         if (!success) {
-          console.log(`🟠 Remote mismatch for ${langForRemote}: exp=${JSON.stringify(expectedOut)} act=${output.trim().slice(0,200)}`);
+          const errFrag = stderr.trim().slice(0, 200);
+          console.log(`🟠 Remote mismatch for ${langForRemote}: exp=${JSON.stringify(expectedOut)} act=${output.trim().slice(0,200)}${errFrag ? ' | stderr: ' + errFrag : ''}`);
         } else {
           console.log(`🟢 Remote matched for ${langForRemote}`);
         }
@@ -158,7 +166,7 @@ class EvaluationService {
           success,
           output: output.trim(),
           executionTime,
-          error: response.data.error || null
+          error: stderr.trim() || null
         };
 
   } catch (remoteError) {
