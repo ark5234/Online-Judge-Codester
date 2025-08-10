@@ -141,7 +141,8 @@ class EvaluationService {
       try {
   console.log(`🔭 Remote compile request => lang=${langForRemote}`);
   const payload = { code: executableCode, language: langForRemote, input: '' };
-  const response = await this.postWithRetry('/execute', payload, 2);
+  const remoteTimeout = (langForRemote === 'python' || langForRemote === 'java') ? 20000 : 12000;
+  const response = await this.postWithRetry('/execute', payload, 2, remoteTimeout);
 
   const executionTime = Date.now() - startTime;
   const output = response.data.output || '';
@@ -177,13 +178,13 @@ class EvaluationService {
   }
 
   // Helper: POST with small retry and optional fallback URL (IP)
-  async postWithRetry(path, data, retries = 2) {
+  async postWithRetry(path, data, retries = 2, timeoutMs = 10000) {
     const urls = [this.compilerUrl, this.compilerUrlFallback].filter(Boolean);
     let lastErr;
     for (const base of urls) {
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-          return await axios.post(`${base}${path}`, data, { timeout: 10000 });
+          return await axios.post(`${base}${path}`, data, { timeout: timeoutMs });
         } catch (e) {
           lastErr = e;
           const msg = (e?.message || '').toLowerCase();
