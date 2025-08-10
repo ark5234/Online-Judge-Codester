@@ -23,6 +23,12 @@ const DEFAULT_USER_SEED = {
   password: 'User@12345',
   role: 'user'
 };
+const DEFAULT_ADMIN2_SEED = {
+  email: 'admin.demo@codester.dev',
+  name: 'Admin Demo',
+  password: 'Admin2@12345',
+  role: 'admin'
+};
 
 // Import models
 const User = require('./models/User');
@@ -77,7 +83,7 @@ const connectDB = async () => {
     if (SEED_TEST_USERS && mongoose.connection.readyState === 1) {
       try {
         console.log('🌱 Seeding test users (guarded by SEED_TEST_USERS)...');
-        const seeds = [DEFAULT_ADMIN_SEED, DEFAULT_USER_SEED];
+  const seeds = [DEFAULT_ADMIN_SEED, DEFAULT_ADMIN2_SEED, DEFAULT_USER_SEED];
         for (const seed of seeds) {
           const existing = await User.findOne({ email: seed.email.toLowerCase() });
           if (!existing) {
