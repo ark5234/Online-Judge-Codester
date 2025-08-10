@@ -118,29 +118,30 @@ app.get('/api/debug', (req, res) => {
 
 // Test compiler connectivity from Render
 app.get('/api/debug/compiler', async (req, res) => {
-  try {
-    const compilerUrl = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
-    console.log('Testing compiler connection to:', compilerUrl);
-    
-    const response = await axios.get(`${compilerUrl}/health`, {
-      timeout: 10000
-    });
-    
-    res.json({
-      success: true,
-      compilerUrl: compilerUrl,
-      response: response.data,
-      status: response.status
-    });
-  } catch (error) {
-    console.error('Compiler test failed:', error.message);
-    res.json({
-      success: false,
-      compilerUrl: process.env.COMPILER_SERVICE_URL || 'Not Set',
-      error: error.message,
-      code: error.code
-    });
+  const primary = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
+  const fallback = process.env.COMPILER_SERVICE_URL_FALLBACK || '';
+  const urls = [primary, fallback].filter(Boolean);
+  const results = [];
+  
+  for (const u of urls) {
+    try {
+      console.log('Testing compiler connection to:', u);
+      const response = await axios.get(`${u}/health`, { timeout: 7000 });
+      results.push({ url: u, ok: true, status: response.status, data: response.data });
+    } catch (e) {
+      results.push({ url: u, ok: false, error: e.message, code: e.code || null });
+    }
   }
+  
+  res.json({
+    primary,
+    fallback: fallback || null,
+    results,
+    env: {
+      COMPILER_SERVICE_URL: !!process.env.COMPILER_SERVICE_URL,
+      COMPILER_SERVICE_URL_FALLBACK: !!process.env.COMPILER_SERVICE_URL_FALLBACK
+    }
+  });
 });
 
 // Test MongoDB connection endpoint

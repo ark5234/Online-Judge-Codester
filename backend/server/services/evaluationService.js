@@ -141,8 +141,8 @@ class EvaluationService {
       try {
   console.log(`🔭 Remote compile request => lang=${langForRemote}`);
   const payload = { code: executableCode, language: langForRemote, input: '' };
-  // Keep UI responsive: shorter per-attempt timeout and fewer retries
-  const remoteTimeout = (langForRemote === 'python' || langForRemote === 'java') ? 10000 : 8000;
+  // Generous timeout for heavier compiles (python/java) to avoid premature timeouts
+  const remoteTimeout = (langForRemote === 'python' || langForRemote === 'java') ? 20000 : 8000;
   const response = await this.postWithRetry('/execute', payload, 1, remoteTimeout);
 
   const executionTime = Date.now() - startTime;
