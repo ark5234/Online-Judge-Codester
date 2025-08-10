@@ -930,7 +930,35 @@ app.post('/api/submissions', guestAuth, async (req, res) => {
     }
     
   console.log(`✅ [${reqId}] evaluation done: ${result.passedTests}/${result.totalTests} ${result.overallStatus}`);
-  res.json({
+    // Persist submission + update problem stats when DB is connected and user is not guest
+    try {
+      if (mongoose.connection.readyState === 1 && req.user && req.user.role !== 'guest') {
+        const problemDoc = await Problem.findById(problemId);
+        if (problemDoc) {
+          // Map status to submission schema enum
+          const hasError = (result.testCases || []).some(tc => !!tc.error);
+          const statusMap = result.overallStatus === 'Accepted' ? 'accepted' : (hasError ? 'runtime_error' : 'wrong_answer');
+          await Submission.create({
+            user: req.user._id,
+            problem: problemDoc._id,
+            code,
+            language,
+            status: statusMap,
+            executionTime: result.executionTime || 0,
+            memoryUsed: result.memoryUsed || 0,
+            testCasesPassed: result.passedTests || 0,
+            totalTestCases: result.totalTests || 0,
+            errorMessage: hasError ? (result.testCases.find(tc => tc.error)?.error || '') : ''
+          });
+          // Update acceptance counters on the problem
+          await problemDoc.addSubmission(result.overallStatus === 'Accepted');
+        }
+      }
+    } catch (persistErr) {
+      console.warn('⚠️ Failed to persist submission or update problem stats:', persistErr.message);
+    }
+
+    res.json({
       success: true,
       result: {
         status: result.overallStatus,

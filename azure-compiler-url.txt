@@ -1,1 +1,1 @@
-﻿http://codester-compiler-5682.centralindia.azurecontainer.io:8000
+﻿http://codester-compiler-1616.centralindia.azurecontainer.io
