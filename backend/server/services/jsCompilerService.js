@@ -357,28 +357,68 @@ class JavaScriptCompilerService {
             error: null
           });
         } else {
-          // Fallback to safer eval with Function constructor
+          // Fallback to safer eval with Function constructor with LL-aware input shaping
           try {
-            const safeCode = `
+            const safeCodeBase = `
               ${jsCode}
-              
-              (function() {
+
+              // Linked list helpers
+              function ListNode(val, next){ this.val = val; this.next = next || null; }
+              function fromArray(arr){ const d=new ListNode(0); let c=d; for(const v of (arr||[])){ c.next=new ListNode(v); c=c.next; } return d.next; }
+              function tryCall(funcName, rawInputs){
+                try {
+                  return { ok: true, val: (globalThis[funcName] || eval(funcName))(...rawInputs) };
+                } catch (e) {
+                  return { ok: false, err: e.message };
+                }
+              }
+            `;
+
+            // Strategy A: call with inputs as-is
+            const safeCodeA = `
+              ${safeCodeBase}
+              (function(){
                 try {
                   const inputs = ${JSON.stringify(testCase.input)};
-                  const result = ${functionName}(...inputs);
-                  return { success: true, result: result };
+                  const r = tryCall(${JSON.stringify(functionName)}, inputs);
+                  if (r.ok) return { success: true, result: r.val };
+                  return { success: false, error: r.err };
                 } catch (error) {
                   return { success: false, error: error.message };
                 }
               })();
             `;
-            
-            // Create a function to execute the code
-            const executeFunction = new Function('return ' + safeCode);
-            const result = executeFunction();
-            
+            let executeFunction = new Function('return ' + safeCodeA);
+            let result = executeFunction();
+
+            // Strategy B: if failed, and single flat numeric array provided, convert to ListNode and retry
+            if (!result.success) {
+              const safeCodeB = `
+                ${safeCodeBase}
+                (function(){
+                  try {
+                    const inputs = ${JSON.stringify(testCase.input)};
+                    // If inputs is [ [1,2,3] ] or just [1,2,3], normalize to a single ListNode
+                    let args = Array.isArray(inputs) ? inputs : [inputs];
+                    if (args.length === 1 && Array.isArray(args[0]) && args[0].every(x => typeof x === 'number')) {
+                      args = [ fromArray(args[0]) ];
+                    } else if (Array.isArray(args) && args.every(x => typeof x === 'number')) {
+                      args = [ fromArray(args) ];
+                    }
+                    const r = tryCall(${JSON.stringify(functionName)}, args);
+                    if (r.ok) return { success: true, result: r.val };
+                    return { success: false, error: r.err };
+                  } catch (error) {
+                    return { success: false, error: error.message };
+                  }
+                })();
+              `;
+              executeFunction = new Function('return ' + safeCodeB);
+              result = executeFunction();
+            }
+
             clearTimeout(timeoutId);
-            
+
             if (!result.success) {
               resolve({
                 passed: false,
@@ -387,10 +427,10 @@ class JavaScriptCompilerService {
               });
               return;
             }
-            
+
             // Compare outputs
             const passed = this.compareOutputs(result.result, testCase.expectedOutput);
-            
+
             resolve({
               passed,
               output: result.result,
