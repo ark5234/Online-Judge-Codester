@@ -112,8 +112,8 @@ if (-not $fqdn -and -not $pubip) {
   throw "Failed to obtain ACI endpoint."
 }
 
-if ($fqdn) { $serviceUrl = "http://$fqdn:8000" }
-else { $serviceUrl = "http://$pubip:8000" }
+if ($fqdn) { $serviceUrl = "http://${fqdn}:8000" }
+else { $serviceUrl = "http://${pubip}:8000" }
 
 Write-Host "✅ Compiler Service URL: $serviceUrl" -ForegroundColor Green
 "$serviceUrl" | Out-File -FilePath (Join-Path $PSScriptRoot "..\azure-compiler-url.txt") -Encoding UTF8
