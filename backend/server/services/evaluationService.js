@@ -214,14 +214,18 @@ class EvaluationService {
     const startTime = Date.now();
     
     try {
-      const vm = new VM({
-        timeout: 5000,
-        sandbox: {}
-      });
-      
-      const result = vm.run(executableCode);
+      const vm = new VM({ timeout: 5000, sandbox: {} });
+      // Capture console.log output from harness and return the last printed line
+      const wrapped = `(() => {\n`+
+        ` let __CAP = '';\n`+
+        ` const __orig = console.log;\n`+
+        ` console.log = (...args) => { try { __CAP += args.map(a => (typeof a==='string' ? a : JSON.stringify(a))).join(' ') + '\\n'; } catch(_) {} __orig(...args); };\n`+
+        ` ${executableCode}\n`+
+        ` try { return (__CAP.trim().split('\\n').pop() || ''); } catch(_) { return (__CAP || ''); }\n`+
+      `})()`;
+      const result = vm.run(wrapped);
       const executionTime = Date.now() - startTime;
-      const success = this.compareOutputs(result, expectedOut);
+      const success = this.compareOutputs((result || '').toString().trim(), expectedOut);
       
       return {
         success,
@@ -245,7 +249,7 @@ class EvaluationService {
     // Special-case: treat null/None as [] when expected is an empty array (linked list empty)
     if ((Array.isArray(expected) && expected.length === 0) || (typeof expected === 'string' && expected.trim() === '[]')) {
       const a = (actual ?? '').toString().trim().toLowerCase();
-      if (a === 'null' || a === 'none') return true;
+      if (a === 'null' || a === 'none' || a === '') return true;
     }
     // Mirror the robust logic from DirectExecutionService
     const aStr = (actual ?? '').toString().trim();
