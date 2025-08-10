@@ -23,16 +23,37 @@ export const AuthProvider = ({ children }) => {
   // Ensure JWT is applied if available (fallback when cookies are blocked)
   restoreJwtFromStorage();
       const userData = await account.get();
-      setUser(userData);
+      let mergedUser = userData;
+      // Try to enrich with backend role/isAdmin using existing JWT (if any)
+      try {
+        const me = await authService.getCurrentUser();
+        if (me && (me.user || me.role || me.isAdmin)) {
+          const beUser = me.user || me;
+          mergedUser = {
+            ...userData,
+            // preserve Appwrite identifiers but add backend fields
+            email: beUser.email || userData.email,
+            name: beUser.name || userData.name,
+            role: beUser.role,
+            isAdmin: beUser.isAdmin === true || beUser.role === 'admin'
+          };
+        }
+      } catch (_) {
+        // ignore, fallback to Appwrite-only user
+      }
+      setUser(mergedUser);
     } catch (error) {
       // No Appwrite session (likely third-party cookies blocked). Try backend token fallback
       try {
         const me = await authService.getCurrentUser();
+        const beUser = me.user || me;
         setUser({
           // Normalize to Appwrite-like shape for the rest of the app
-          $id: me.user?._id || me._id || 'local',
-          name: me.user?.name || me.name || me.user?.username || me.username || me.user?.email || me.email,
-          email: me.user?.email || me.email,
+          $id: beUser._id || 'local',
+          name: beUser.name || beUser.username || beUser.email,
+          email: beUser.email,
+          role: beUser.role,
+          isAdmin: beUser.isAdmin === true || beUser.role === 'admin',
           provider: 'backend-token',
         });
       } catch (e) {
@@ -124,6 +145,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+  isAdmin: !!(user?.isAdmin || user?.role === 'admin'),
     login,
     register,
     logout,
