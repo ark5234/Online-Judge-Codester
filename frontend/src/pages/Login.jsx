@@ -12,10 +12,11 @@ import {
   FiUser,
   FiShield
 } from "react-icons/fi";
-import authService from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -76,13 +77,13 @@ export default function Login() {
     }
 
     try {
-      // Login using auth service
-      const result = await authService.loginUser(formData.email, formData.password);
-      
-      console.log("Login successful:", result);
-      
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Login using AuthContext (handles Appwrite and backend-token fallback)
+      const result = await login(formData.email, formData.password);
+      if (result?.success) {
+        navigate("/dashboard");
+        return;
+      }
+      throw new Error(result?.error || 'Login failed');
     } catch (err) {
       console.error("Login error:", err);
       setError(err.message || "Login failed. Please try again.");

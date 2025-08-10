@@ -1,11 +1,21 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { account, restoreJwtFromStorage, setJwt } from "../services/appwrite";
+import authService from "../services/authService";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Local token helpers for backend-auth fallback
+  const TOKEN_KEY = 'authToken';
+  const getLocalToken = () => {
+    try { return localStorage.getItem(TOKEN_KEY) || null; } catch { return null; }
+  };
+  const clearLocalToken = () => {
+    try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  };
 
   const fetchUser = async () => {
     try {
@@ -15,8 +25,20 @@ export const AuthProvider = ({ children }) => {
       const userData = await account.get();
       setUser(userData);
     } catch (error) {
-      console.log('No active session');
-      setUser(null);
+      // No Appwrite session (likely third-party cookies blocked). Try backend token fallback
+      try {
+        const me = await authService.getCurrentUser();
+        setUser({
+          // Normalize to Appwrite-like shape for the rest of the app
+          $id: me.user?._id || me._id || 'local',
+          name: me.user?.name || me.name || me.user?.username || me.username || me.user?.email || me.email,
+          email: me.user?.email || me.email,
+          provider: 'backend-token',
+        });
+      } catch (e) {
+        console.log('No active session');
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -25,14 +47,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
-      await account.createEmailPasswordSession(email, password);
-      // Use JWT for cookie-less auth
+      // Try Appwrite first
       try {
+        await account.createEmailPasswordSession(email, password);
         const { jwt } = await account.createJWT();
         setJwt(jwt);
-      } catch {}
-      await fetchUser();
-      return { success: true };
+        await fetchUser();
+        return { success: true };
+      } catch (appwriteErr) {
+        // Fallback to backend auth (no third-party cookies required)
+        const res = await authService.loginUser(email, password);
+        if (res?.token) {
+          await fetchUser();
+          return { success: true };
+        }
+        throw appwriteErr;
+      }
     } catch (error) {
       console.error('Login error:', error);
       return { 
@@ -47,15 +77,21 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, name) => {
     try {
       setLoading(true);
-      await account.create('unique()', email, password, name);
-      await account.createEmailPasswordSession(email, password);
-      // Use JWT for cookie-less auth
       try {
+        await account.create('unique()', email, password, name);
+        await account.createEmailPasswordSession(email, password);
         const { jwt } = await account.createJWT();
         setJwt(jwt);
-      } catch {}
-      await fetchUser();
-      return { success: true };
+        await fetchUser();
+        return { success: true };
+      } catch (appwriteErr) {
+        // Backend fallback registration
+        await authService.registerUser({ email, password, name });
+        // Immediately login via backend
+        await authService.loginUser(email, password);
+        await fetchUser();
+        return { success: true };
+      }
     } catch (error) {
       console.error('Registration error:', error);
       return { 
@@ -73,6 +109,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('user');
   setJwt(null);
+  clearLocalToken();
     } catch (error) {
       console.error('Logout error:', error);
     }

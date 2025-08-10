@@ -9,6 +9,20 @@ require('dotenv').config();
 
 // Configuration - Updated for new compiler service
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'vikrantkawadkar2099@gmail.com';
+const SEED_TEST_USERS = (process.env.SEED_TEST_USERS || '').toLowerCase() === 'true' 
+  || (process.env.NODE_ENV !== 'production' && (process.env.SEED_TEST_USERS || '') !== 'false');
+const DEFAULT_ADMIN_SEED = {
+  email: ADMIN_EMAIL,
+  name: 'Admin Vikrant',
+  password: 'Admin@12345',
+  role: 'admin'
+};
+const DEFAULT_USER_SEED = {
+  email: 'test.user@codester.dev',
+  name: 'Test User',
+  password: 'User@12345',
+  role: 'user'
+};
 
 // Import models
 const User = require('./models/User');
@@ -58,6 +72,30 @@ const connectDB = async () => {
     });
     
     console.log('✅ MongoDB connected successfully');
+
+    // Seed test users once DB is connected
+    if (SEED_TEST_USERS && mongoose.connection.readyState === 1) {
+      try {
+        console.log('🌱 Seeding test users (guarded by SEED_TEST_USERS)...');
+        const seeds = [DEFAULT_ADMIN_SEED, DEFAULT_USER_SEED];
+        for (const seed of seeds) {
+          const existing = await User.findOne({ email: seed.email.toLowerCase() });
+          if (!existing) {
+            const u = new User(seed);
+            await u.save();
+            console.log(`✅ Seeded user: ${seed.email} (${seed.role})`);
+          } else if (seed.role === 'admin' && existing.role !== 'admin') {
+            existing.role = 'admin';
+            await existing.save();
+            console.log(`🔒 Promoted existing user to admin: ${seed.email}`);
+          }
+        }
+      } catch (seedErr) {
+        console.warn('⚠️ Seeding users failed:', seedErr.message);
+      }
+    } else {
+      console.log('⏭️ Skipping user seeding (SEED_TEST_USERS disabled or DB not connected).');
+    }
     
     // Handle connection events
     mongoose.connection.on('error', (err) => {

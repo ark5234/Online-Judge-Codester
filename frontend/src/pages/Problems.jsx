@@ -20,6 +20,12 @@ export default function Problems() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
 
+  // Frontend-only hidden problems (keep backend/data intact)
+  const HIDDEN_TITLES = new Set([
+    'Word Ladder',
+    // 'Word Ladder II' // add here in future if needed
+  ]);
+
   // Fetch problems from API
   useEffect(() => {
     const fetchProblems = async () => {
@@ -42,7 +48,8 @@ export default function Problems() {
     const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (problem.category && problem.category.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesDifficulty = selectedDifficulty === "All" || problem.difficulty === selectedDifficulty;
-    return matchesSearch && matchesDifficulty;
+    const isHidden = HIDDEN_TITLES.has((problem.title || '').trim());
+    return matchesSearch && matchesDifficulty && !isHidden;
   });
 
   if (loading) {

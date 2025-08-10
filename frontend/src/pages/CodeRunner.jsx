@@ -44,6 +44,8 @@ export default function CodeRunner() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("Output will appear here...");
   const [review, setReview] = useState("AI Review will appear here...");
+  const [testCases, setTestCases] = useState([{ id: 1, input: '', expected: '' }]);
+  const [testResults, setTestResults] = useState([]);
   
   // UI state
   const [isRunning, setIsRunning] = useState(false);
@@ -365,6 +367,53 @@ Please try again later!`);
     showToast("Output cleared!");
   }, [showToast]);
 
+  const addTestCase = useCallback(() => {
+    setTestCases(prev => [...prev, { id: Date.now(), input: '', expected: '' }]);
+  }, []);
+
+  const removeTestCase = useCallback((id) => {
+    setTestCases(prev => prev.filter(tc => tc.id !== id));
+  }, []);
+
+  const updateTestCase = useCallback((id, field, value) => {
+    setTestCases(prev => prev.map(tc => tc.id === id ? { ...tc, [field]: value } : tc));
+  }, []);
+
+  const runTestCases = useCallback(async () => {
+    if (testCases.length === 0) return;
+    setIsRunning(true);
+    setTestResults([]);
+    try {
+      const backendUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://online-judge-codester.onrender.com/api';
+      const executeUrl = `${backendUrl}/execute`;
+      const results = [];
+      for (const tc of testCases) {
+        const resp = await fetch(executeUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ language, code, input: tc.input })
+        });
+        let ok = false, actual = '', errMsg = '';
+        if (resp.ok) {
+          const data = await resp.json();
+          actual = (data.output || '').trim();
+          errMsg = data.error || '';
+          ok = errMsg ? false : actual === (tc.expected || '').trim();
+        } else {
+          errMsg = `HTTP ${resp.status}`;
+        }
+        results.push({ id: tc.id, pass: ok, actual, expected: (tc.expected || '').trim(), error: errMsg });
+      }
+      setTestResults(results);
+      const passed = results.filter(r => r.pass).length;
+      showToast(`Test Results: ${passed}/${results.length} passed`, passed === results.length ? 'success' : 'warning');
+    } catch (e) {
+      handleError(e, 'run test cases');
+    } finally {
+      setIsRunning(false);
+    }
+  }, [testCases, language, code, showToast, handleError]);
+
   const handleCopyReview = useCallback(() => {
     navigator.clipboard.writeText(review)
       .then(() => showToast("Review copied to clipboard!"))
@@ -619,6 +668,69 @@ Please try again later!`);
 
           {/* Right Panel */}
           <div className="space-y-6 sm:space-y-8">
+            {/* Quick Test Cases */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-lg text-gray-700 dark:text-gray-200">Quick Test Cases</h3>
+                <button
+                  onClick={addTestCase}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
+                >Add</button>
+              </div>
+              <div className="space-y-3">
+                {testCases.map(tc => (
+                  <div key={tc.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Input</label>
+                        <textarea
+                          value={tc.input}
+                          onChange={e => updateTestCase(tc.id, 'input', e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-2 text-sm font-mono"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Expected Output</label>
+                        <textarea
+                          value={tc.expected}
+                          onChange={e => updateTestCase(tc.id, 'expected', e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-2 text-sm font-mono"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={() => removeTestCase(tc.id)}
+                        className="text-xs text-red-600 hover:text-red-700"
+                      >Remove</button>
+                    </div>
+                    {testResults.find(r => r.id === tc.id) && (
+                      <div className="mt-2 text-sm">
+                        {(() => { const r = testResults.find(r => r.id === tc.id); return r?.pass ? (
+                          <span className="text-green-600">✔ Passed</span>
+                        ) : (
+                          <span className="text-red-600">✘ Failed {r?.error ? `(Error: ${r.error})` : ''}</span>
+                        ); })()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end mt-3">
+                <button
+                  onClick={runTestCases}
+                  disabled={isRunning || testCases.length === 0}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+                >Run Tests</button>
+              </div>
+            </motion.div>
             {/* Input */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}

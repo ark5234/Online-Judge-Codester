@@ -1,22 +1,23 @@
-﻿#  Online Judge - Codester
+﻿# Online Judge - Codester
 
 A modern, full-stack online coding platform designed for competitive programming, algorithm practice, and coding interviews. Built with cutting-edge technologies and deployed on cloud infrastructure.
 
-##  Features
+## Features
 
-- ** Multi-Language Code Execution**: Support for Python, JavaScript, Java, C++, and C
-- ** Comprehensive Problem Library**: Curated algorithmic challenges across multiple difficulty levels
-- ** AI-Powered Code Assistance**: Intelligent hints and code reviews powered by Google Gemini AI
-- ** Complete User Management**: Secure authentication, user profiles, and progress tracking
-- ** Advanced Analytics**: Detailed submission statistics and performance metrics
-- ** Community Features**: Discussion forums for problem-solving and knowledge sharing
-- ** Modern Responsive UI**: Beautiful interface built with React 19 and Tailwind CSS
-- ** Real-time Code Editor**: Monaco Editor with syntax highlighting and IntelliSense
-- ** Secure Architecture**: JWT-based authentication with comprehensive middleware protection
+- **Multi-Language Code Execution**: Support for Python, JavaScript, Java, C++, and C
+- **Comprehensive Problem Library**: Curated algorithmic challenges across multiple difficulty levels
+- **AI-Powered Code Assistance**: Intelligent hints and code reviews powered by Google Gemini AI
+- **Complete User Management**: Secure authentication, user profiles, and progress tracking
+- **Advanced Analytics**: Detailed submission statistics and performance metrics
+- **Community Features**: Discussion forums for problem-solving and knowledge sharing
+- **Modern Responsive UI**: Beautiful interface built with React 19 and Tailwind CSS
+- **Real-time Code Editor**: Monaco Editor with syntax highlighting and IntelliSense
+- **Secure Architecture**: JWT-based authentication with comprehensive middleware protection
 
-##  Tech Stack
+## Tech Stack
 
 ### Frontend
+
 - **React 19** - Latest React with concurrent features
 - **Vite** - Next-generation frontend tooling
 - **Tailwind CSS** - Utility-first CSS framework
@@ -26,6 +27,7 @@ A modern, full-stack online coding platform designed for competitive programming
 - **Lucide React** - Beautiful & consistent icons
 
 ### Backend
+
 - **Node.js & Express** - Server-side JavaScript runtime and framework
 - **MongoDB Atlas** - Cloud-hosted NoSQL database
 - **Redis Cloud** - In-memory caching and session storage
@@ -34,19 +36,20 @@ A modern, full-stack online coding platform designed for competitive programming
 - **Appwrite** - Backend-as-a-Service for additional features
 
 ### Infrastructure & Deployment
+
 - **Frontend**: Vercel (Global CDN, automatic deployments)
 - **Backend**: Render (Auto-scaling, continuous deployment)
 - **Compiler Service**: Azure Container Instances (Isolated code execution)
 - **Database**: MongoDB Atlas (Multi-region clusters)
 - **Cache**: Redis Cloud (High-performance caching)
 
-##  Live Demo
+## Live Demo
 
-- ** Frontend**: https://codester.vercel.app
-- ** Backend API**: https://online-judge-codester.onrender.com
-- ** Compiler Service**: http://4.187.155.173:80
+- **Frontend**: <https://codester.vercel.app>
+- **Backend API**: <https://online-judge-codester.onrender.com>
+- **Compiler Service**: <http://4.187.155.173:80>
 
-##  Prerequisites
+## Prerequisites
 
 - **Node.js 18+** - JavaScript runtime
 - **MongoDB Atlas Account** - Cloud database service
@@ -55,7 +58,7 @@ A modern, full-stack online coding platform designed for competitive programming
 - **Google Gemini API Key** - For AI assistance (optional)
 - **Git** - Version control
 
-##  Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 
@@ -102,7 +105,22 @@ COMPILER_SERVICE_URL=http://4.187.155.173:80
 CORS_ORIGIN=https://codester.vercel.app
 ```
 
-##  Supported Languages
+##  Important Notes & Warnings
+
+- Third‑party cookies: If your browser blocks third‑party cookies, Appwrite cookie sessions may fail. The app includes a cookie‑less fallback for manual email/password login via backend JWT. Google OAuth may still rely on cookies unless configured with a token exchange.
+- Compiler timeouts: Long‑running or highly interactive programs may time out. Prefer printing final answers. Memory/CPU are limited in the remote sandbox.
+- Hidden problems in v1.0: Some problems may be intentionally hidden from the Problems list for the initial release (e.g., Word Ladder). Existing backend/data routes still work; UI only hides them.
+- CORS/domains: Ensure frontend and backend origins are added to CORS allowed origins and that environment variables match your deployed URLs.
+- Security: Do not commit secrets. Use environment variables or secret managers (e.g., Azure Key Vault) for tokens and keys.
+
+##  Suggestions for Users
+
+- Prefer using the Code Runner’s test cases panel to iterate on logic with custom inputs and expected outputs.
+- For Java solutions, ensure your entry class is `Main` if running raw code in the Code Runner.
+- For linked list problems, follow the input format shown in each problem description to avoid parsing mismatches.
+- Save your work frequently; the editor auto‑saves, but manual save is available in the UI.
+
+## Supported Languages
 
 - **Python** (3.10+)
 - **JavaScript** (Node.js)
@@ -110,7 +128,7 @@ CORS_ORIGIN=https://codester.vercel.app
 - **C++** (GCC)
 - **C** (GCC)
 
-##  Problem Categories
+## Problem Categories
 
 - **Arrays & Strings**
 - **Linked Lists**
@@ -121,7 +139,7 @@ CORS_ORIGIN=https://codester.vercel.app
 - **Mathematics**
 - **Bit Manipulation**
 
-##  Deployment
+## Deployment
 
 ### Frontend (Vercel)
 
@@ -142,7 +160,7 @@ CORS_ORIGIN=https://codester.vercel.app
 3. Configure public IP and port access
 4. Update backend environment variables with new service URL
 
-##  Project Structure
+## Project Structure
 
 ```plaintext
 Online-Judge-Codester/
@@ -167,7 +185,7 @@ Online-Judge-Codester/
 └── README.md              # Project documentation
 ```
 
-##  Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -175,11 +193,11 @@ Online-Judge-Codester/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-##  License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-##  Acknowledgments
+## Acknowledgments
 
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) - VS Code's editor for the web
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
@@ -189,7 +207,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Vercel](https://vercel.com/) - Frontend hosting and deployment
 - [Azure](https://azure.microsoft.com/) - Compiler service hosting
 
-##  Support
+## Support
 
 If you have any questions or need help, please:
 
@@ -197,7 +215,7 @@ If you have any questions or need help, please:
 -  Contact the development team
 -  Check the documentation above
 
-##  Roadmap
+## Roadmap
 
 - [ ] Contest management system
 - [ ] Real-time leaderboards
