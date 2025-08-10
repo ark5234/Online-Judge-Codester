@@ -98,7 +98,10 @@ for ($i=0; $i -lt 12; $i++) {
   $state = ($state | Out-String).Trim()
   $fqdn = ($fqdn | Out-String).Trim()
   $pubip = ($pubip | Out-String).Trim()
-  Write-Host ("  state={0} fqdn={1} ip={2}" -f ($state ?? ""), ($fqdn ?? ""), ($pubip ?? "")) -ForegroundColor Gray
+  $stateOut = if ([string]::IsNullOrWhiteSpace($state)) { "" } else { $state }
+  $fqdnOut = if ([string]::IsNullOrWhiteSpace($fqdn)) { "" } else { $fqdn }
+  $ipOut = if ([string]::IsNullOrWhiteSpace($pubip)) { "" } else { $pubip }
+  Write-Host ("  state={0} fqdn={1} ip={2}" -f $stateOut, $fqdnOut, $ipOut) -ForegroundColor Gray
   if ($fqdn -or $pubip) { break }
   Start-Sleep -Seconds 15
 }
