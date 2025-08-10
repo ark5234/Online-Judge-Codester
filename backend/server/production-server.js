@@ -1804,16 +1804,19 @@ app.listen(PORT, () => {
 });
 
 // Seed users on demand (guarded by seed key or admin auth)
-app.post('/api/admin/seed-users', async (req, res) => {
+app.all('/api/admin/seed-users', async (req, res) => {
   try {
-    const { seedKey } = req.body || {};
+    const { seedKey: bodyKey } = req.body || {};
+    const { seedKey: queryKey } = req.query || {};
+    const seedKey = bodyKey || queryKey;
 
     let isAdmin = false;
     const validKey = seedKey === (process.env.SEED_USERS_KEY || 'SEED_USERS_2025');
 
     if (!validKey) {
-      // Try to authorize via admin token
+      // Try to authorize via admin JWT token
       try {
+        await authenticateToken(req, res, () => {});
         await requireAdmin(req, res, () => {});
         isAdmin = true;
       } catch (_) {

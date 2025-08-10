@@ -112,6 +112,8 @@ CORS_ORIGIN=https://codester.vercel.app
 - Hidden problems in v1.0: Some problems may be intentionally hidden from the Problems list for the initial release (e.g., Word Ladder). Existing backend/data routes still work; UI only hides them.
 - CORS/domains: Ensure frontend and backend origins are added to CORS allowed origins and that environment variables match your deployed URLs.
 - Security: Do not commit secrets. Use environment variables or secret managers (e.g., Azure Key Vault) for tokens and keys.
+ - AI hints: The AI assistant isn’t perfect; treat hints as guidance, not final answers. Verify logic with test cases.
+ - Google sign‑in: If you can’t sign in with Google, check your browser’s “Secure/Third‑party cookies” setting. Use email/password login as a fallback.
 
 ##  Suggestions for Users
 

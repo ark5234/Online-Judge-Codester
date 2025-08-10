@@ -319,6 +319,7 @@ export default function Login() {
             className="text-gray-600 dark:text-gray-300 text-sm text-center space-y-2"
           >
             <p>New user? Registration is automatic via Google login.</p>
+            <p className="text-xs">If Google sign-in fails, ensure your browser allows third-party cookies (Secure Site) or use email/password instead.</p>
             <Link 
               to="/register" 
               className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors duration-300"
