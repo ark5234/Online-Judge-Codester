@@ -248,6 +248,11 @@ class DirectExecutionService {
   }
 
   compareOutputs(actual, expected) {
+    // Special-case: empty linked list expected
+    if ((Array.isArray(expected) && expected.length === 0) || (typeof expected === 'string' && expected.trim() === '[]')) {
+      const a = (actual ?? '').toString().trim().toLowerCase();
+      if (a === 'null' || a === 'none') return true;
+    }
     // If expected provided as actual array/object, deep-compare
     if (expected && (Array.isArray(expected) || typeof expected === 'object')) {
       const aStr = (actual ?? '').toString().trim();

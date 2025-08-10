@@ -488,6 +488,11 @@ class JavaScriptCompilerService {
    * 🎯 Compare expected vs actual outputs
    */
   compareOutputs(actual, expected) {
+    // Special-case: empty list expected, accept null/None
+    if ((Array.isArray(expected) && expected.length === 0) || (typeof expected === 'string' && expected.trim() === '[]')) {
+      const a = (actual ?? '').toString().trim().toLowerCase();
+      if (a === 'null' || a === 'none') return true;
+    }
     // Handle different types
     if (typeof actual === 'number' && typeof expected === 'number') {
       return Math.abs(actual - expected) < 1e-9;

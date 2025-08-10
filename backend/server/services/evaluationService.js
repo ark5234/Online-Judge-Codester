@@ -242,6 +242,11 @@ class EvaluationService {
 
   // Compare outputs
   compareOutputs(actual, expected) {
+    // Special-case: treat null/None as [] when expected is an empty array (linked list empty)
+    if ((Array.isArray(expected) && expected.length === 0) || (typeof expected === 'string' && expected.trim() === '[]')) {
+      const a = (actual ?? '').toString().trim().toLowerCase();
+      if (a === 'null' || a === 'none') return true;
+    }
     // Mirror the robust logic from DirectExecutionService
     const aStr = (actual ?? '').toString().trim();
     const eRaw = expected;
