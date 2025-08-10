@@ -141,8 +141,9 @@ class EvaluationService {
       try {
   console.log(`🔭 Remote compile request => lang=${langForRemote}`);
   const payload = { code: executableCode, language: langForRemote, input: '' };
-  const remoteTimeout = (langForRemote === 'python' || langForRemote === 'java') ? 20000 : 12000;
-  const response = await this.postWithRetry('/execute', payload, 2, remoteTimeout);
+  // Keep UI responsive: shorter per-attempt timeout and fewer retries
+  const remoteTimeout = (langForRemote === 'python' || langForRemote === 'java') ? 10000 : 8000;
+  const response = await this.postWithRetry('/execute', payload, 1, remoteTimeout);
 
   const executionTime = Date.now() - startTime;
   const output = response.data.output || '';
@@ -178,7 +179,7 @@ class EvaluationService {
   }
 
   // Helper: POST with small retry and optional fallback URL (IP)
-  async postWithRetry(path, data, retries = 2, timeoutMs = 10000) {
+  async postWithRetry(path, data, retries = 1, timeoutMs = 10000) {
     const urls = [this.compilerUrl, this.compilerUrlFallback].filter(Boolean);
     let lastErr;
     for (const base of urls) {
@@ -188,7 +189,13 @@ class EvaluationService {
         } catch (e) {
           lastErr = e;
           const msg = (e?.message || '').toLowerCase();
-          const retryable = msg.includes('enotfound') || msg.includes('econnrefused') || msg.includes('timeout') || msg.includes('etimedout');
+          const code = (e?.code || '').toLowerCase();
+          const isDnsError = msg.includes('enotfound') || code === 'enotfound';
+          const retryable = isDnsError || msg.includes('econnrefused') || msg.includes('timeout') || msg.includes('etimedout');
+          // If DNS fails for this base URL, skip retries and immediately try the next base (e.g., fallback IP)
+          if (isDnsError) {
+            break; // break inner loop, move to next base URL
+          }
           if (attempt < retries && retryable) {
             await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
             continue;

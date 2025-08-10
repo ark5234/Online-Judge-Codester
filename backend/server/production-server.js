@@ -906,6 +906,8 @@ app.post('/api/execute', async (req, res) => {
 app.post('/api/submissions', guestAuth, async (req, res) => {
   try {
     const { problemId, code, language } = req.body;
+    const reqId = `sbm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    console.log(`📝 [${reqId}] /api/submissions received:`, { problemId, language, user: req.user?.role || 'guest' });
     
     // Evaluate submission with new triple-strategy approach
     const result = await evaluationService.evaluateSubmission(
@@ -926,7 +928,8 @@ app.post('/api/submissions', guestAuth, async (req, res) => {
       await redis.setex(cacheKey, 3600, JSON.stringify(result));
     }
     
-    res.json({
+  console.log(`✅ [${reqId}] evaluation done: ${result.passedTests}/${result.totalTests} ${result.overallStatus}`);
+  res.json({
       success: true,
       result: {
         status: result.overallStatus,
@@ -938,7 +941,7 @@ app.post('/api/submissions', guestAuth, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Submission error:', error);
+  console.error('❌ [/api/submissions] error:', error);
     res.status(500).json({ 
       error: 'Submission failed',
       message: error.message 
