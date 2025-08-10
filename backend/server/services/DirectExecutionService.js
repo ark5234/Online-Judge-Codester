@@ -222,10 +222,17 @@ class DirectExecutionService {
       .replace(/^\s*import\s+[^;]+;\s*/gmi, '')
       .replace(/public\s+(?:final\s+|abstract\s+)?(class|interface|enum)\s+(?!Main\b)/g, '$1 ');
 
+    // Avoid conflicts with stray ListNode.java by aliasing ListNode -> __LN
+    let lnAliasDef = '';
+    if (/\bListNode\b/.test(sanitized)) {
+      sanitized = sanitized.replace(/\bListNode\b/g, '__LN');
+      lnAliasDef = `\nclass __LN {\n  int val;\n  __LN next;\n  __LN(){}\n  __LN(int x){ this.val=x; }\n  __LN(int x, __LN n){ this.val=x; this.next=n; }\n}\n`;
+    }
+
     // If user code already declares public class Main, don't duplicate
     if (/public\s+class\s+Main\b/.test(sanitized)) return sanitized;
-    // Place harness first so executor picks Main as the public class/file name
-    return `${harness}\n${sanitized}`;
+  // Place harness first so executor picks Main as the public class/file name
+  return `${harness}\n${lnAliasDef}${sanitized}`;
   }
 
   // Build a C++ harness that wraps user's Solution and runs with embedded input
@@ -239,12 +246,14 @@ class DirectExecutionService {
     const harness = `\n\n#include <bits/stdc++.h>\nusing namespace std;\n\nstruct ListNode; // forward declaration if user defined elsewhere\n\nstatic vector<int> parseNums(const string &s){\n    vector<int> v;\n    size_t lb = s.find('['), rb = s.find(']');\n    if (lb != string::npos && rb != string::npos && rb > lb){\n        string arr = s.substr(lb+1, rb-lb-1);\n        string num;\n        stringstream ss(arr);\n        while (getline(ss, num, ',')) {\n            try { v.push_back(stoi(string(std::regex_replace(num, std::regex("[^-0-9]"), "")))); } catch(...) {}\n        }\n    } else {\n        // fallback: extract all ints except last as array\n        std::regex re("-?\\\\d+");\n        auto begin = std::sregex_iterator(s.begin(), s.end(), re);\n        auto end = std::sregex_iterator();\n        vector<int> all;\n        for (auto it=begin; it!=end; ++it) { all.push_back(stoi((*it).str())); }\n        if (all.size() >= 2) v.assign(all.begin(), all.end()-1);\n        else v = all;\n    }\n    return v;\n}\n\nstatic int parseTarget(const string &s){\n    // take last number if present\n    std::regex re("-?\\\\d+");\n    auto begin = std::sregex_iterator(s.begin(), s.end(), re);\n    auto end = std::sregex_iterator();\n    int last = 0; bool has=false;\n    for (auto it=begin; it!=end; ++it) { has=true; last = stoi((*it).str()); }\n    return has ? last : 0;\n}\n\n// Overload selector: prefer (vector<int>, int) if available; else try (ListNode*) single-arg for LL problems\n\n// Preferred: function like vector<int> f(vector<int>&, int) or similar\ntemplate <typename S>\nauto callFunc(S& sol, vector<int>& nums, int target, int) -> decltype(sol.` + funcName + `(nums, target), vector<int>()) {\n    auto res = sol.` + funcName + `(nums, target);\n    return res;\n}\n\n// Fallback: function like ListNode* f(ListNode*) for linked-list problems (e.g., reverseList)\ntemplate <typename S>\nauto callFunc(S& sol, vector<int>& nums, int /*target*/, long) -> decltype(sol.` + funcName + `((ListNode*)nullptr), vector<int>()) {\n    // Build helpers locally to avoid instantiation unless this overload is selected\n    auto fromArrayLL = [](const vector<int>& a){\n        // assumes ListNode has ctor ListNode(int) and members val/next\n        ListNode dummy(0);\n        ListNode* cur = &dummy;\n        for (int v : a){ cur->next = new ListNode(v); cur = cur->next; }\n        return dummy.next;\n    };\n    auto toArrayLL = [](ListNode* h){\n        vector<int> out;\n        while(h){ out.push_back(h->val); h = h->next; }\n        return out;\n    };\n    ListNode* head = fromArrayLL(nums);\n    auto nodeRes = sol.` + funcName + `(head);\n    return toArrayLL(nodeRes);\n}\n\nint main(){\n    string RAW = R"(` + rawEsc + `)";\n    vector<int> nums = parseNums(RAW);\n    int target = parseTarget(RAW);\n    Solution sol;\n    auto res = callFunc(sol, nums, target, 0);\n    cout << "[";\n    for (size_t i=0;i<res.size();++i){ if(i) cout << ","; cout << res[i]; }\n    cout << "]";\n    return 0;\n}\n`;
   // If a main already exists, return user code
   if (/\bint\s+main\s*\(/.test(userCode)) return userCode;
+  // Always add a forward declaration before user code so signatures compile
+  const forwardDecl = `struct ListNode;\n`;
   // Provide a minimal ListNode definition for users relying on LeetCode-style ListNode
   const hasListNodeDef = /(?:struct|class)\s+ListNode\s*\{/.test(userCode);
   const needsListNode = !hasListNodeDef;
   const listNodeDef = needsListNode ? `\nstruct ListNode {\n    int val;\n    ListNode* next;\n    ListNode(): val(0), next(nullptr) {}\n    ListNode(int x): val(x), next(nullptr) {}\n    ListNode(int x, ListNode* n): val(x), next(n) {}\n};\n` : '';
-  // Ensure the ListNode def (if added) appears before user code, and harness comes after
-  return `${listNodeDef}${userCode}\n${harness}`;
+  // Ensure the forward decl and ListNode def (if added) appear before user code, and harness comes after
+  return `${forwardDecl}${listNodeDef}${userCode}\n${harness}`;
   }
 
   formatInput(input) {
