@@ -5,7 +5,8 @@ const JavaScriptCompilerService = require('./jsCompilerService');
 
 class EvaluationService {
   constructor() {
-    this.compilerUrl = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
+  this.compilerUrl = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
+  this.compilerUrlFallback = process.env.COMPILER_SERVICE_URL_FALLBACK || '';
     this.directExecutor = new DirectExecutionService();
     this.jsCompiler = new JavaScriptCompilerService();
   }
@@ -138,14 +139,9 @@ class EvaluationService {
       
       // Try remote compiler first
       try {
-        console.log(`🔭 Remote compile request => lang=${langForRemote}`);
-        const response = await axios.post(`${this.compilerUrl}/execute`, {
-          code: executableCode,
-          language: langForRemote,
-          input: ''
-        }, {
-          timeout: 10000 // 10 second timeout
-        });
+  console.log(`🔭 Remote compile request => lang=${langForRemote}`);
+  const payload = { code: executableCode, language: langForRemote, input: '' };
+  const response = await this.postWithRetry('/execute', payload, 2);
 
   const executionTime = Date.now() - startTime;
   const output = response.data.output || '';
@@ -163,7 +159,7 @@ class EvaluationService {
           error: response.data.error || null
         };
 
-      } catch (remoteError) {
+  } catch (remoteError) {
         const status = remoteError?.response?.status;
         const rerr = remoteError?.response?.data?.error || remoteError.message;
         console.log(`Remote compiler failed (${status || 'no-status'}): ${String(rerr).slice(0,200)}. Falling back to local JavaScript execution...`);
@@ -178,6 +174,30 @@ class EvaluationService {
         error: error.message
       };
     }
+  }
+
+  // Helper: POST with small retry and optional fallback URL (IP)
+  async postWithRetry(path, data, retries = 2) {
+    const urls = [this.compilerUrl, this.compilerUrlFallback].filter(Boolean);
+    let lastErr;
+    for (const base of urls) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          return await axios.post(`${base}${path}`, data, { timeout: 10000 });
+        } catch (e) {
+          lastErr = e;
+          const msg = (e?.message || '').toLowerCase();
+          const retryable = msg.includes('enotfound') || msg.includes('econnrefused') || msg.includes('timeout') || msg.includes('etimedout');
+          if (attempt < retries && retryable) {
+            await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+            continue;
+          }
+          break;
+        }
+      }
+      // try next URL if available
+    }
+    throw lastErr || new Error('Remote request failed');
   }
 
   // Local JavaScript execution fallback
