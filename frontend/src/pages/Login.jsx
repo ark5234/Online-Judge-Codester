@@ -259,11 +259,11 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Admin Code Field (only for admin mode) */}
+            {/* Admin Code Field (only for admin mode) - optional */}
             {isAdminMode && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Admin Code *
+                  Admin Code (optional)
                 </label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -273,8 +273,7 @@ export default function Login() {
                     value={formData.adminCode}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter admin code"
-                    required
+                    placeholder="Enter admin code (if provided)"
                   />
                 </div>
               </div>
