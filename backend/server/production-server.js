@@ -35,6 +35,7 @@ const User = require('./models/User');
 const Problem = require('./models/Problem');
 const Submission = require('./models/Submission');
 const Discussion = require('./models/Discussion');
+const Settings = require('./models/Settings');
 
 // Import services
 const aiService = require('./services/aiService');
@@ -1849,5 +1850,100 @@ app.post('/api/admin/seed-users', async (req, res) => {
   } catch (error) {
     console.error('Seed users error:', error);
     res.status(500).json({ error: 'Failed to seed users' });
+  }
+});
+
+// List problems (admin)
+app.get('/api/admin/problems', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search } = req.query;
+    const query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+    const problems = await Problem.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+    const total = await Problem.countDocuments(query);
+    res.json({ problems, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (error) {
+    console.error('Error listing problems (admin):', error);
+    res.status(500).json({ error: 'Failed to list problems' });
+  }
+});
+
+// Update problem (admin)
+app.put('/api/admin/problems/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const updated = await Problem.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Problem not found' });
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating problem:', error);
+    res.status(500).json({ error: 'Failed to update problem' });
+  }
+});
+
+// Delete problem (admin)
+app.delete('/api/admin/problems/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const del = await Problem.findByIdAndDelete(req.params.id);
+    if (!del) return res.status(404).json({ error: 'Problem not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting problem:', error);
+    res.status(500).json({ error: 'Failed to delete problem' });
+  }
+});
+
+// List submissions (admin)
+app.get('/api/admin/submissions', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId, problemId, status, page = 1, limit = 50 } = req.query;
+    const query = {};
+    if (userId) query.user = userId;
+    if (problemId) query.problem = problemId;
+    if (status) query.status = status;
+    const submissions = await Submission.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit))
+      .populate('user', 'name email role')
+      .populate('problem', 'title');
+    const total = await Submission.countDocuments(query);
+    res.json({ submissions, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (error) {
+    console.error('Error listing submissions (admin):', error);
+    res.status(500).json({ error: 'Failed to list submissions' });
+  }
+});
+
+// Settings (admin)
+app.get('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const s = await Settings.findOne({ key: 'global' });
+    res.json(s?.data || {});
+  } catch (error) {
+    console.error('Error getting settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+app.put('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const s = await Settings.findOneAndUpdate(
+      { key: 'global' },
+      { $set: { data: req.body || {} } },
+      { upsert: true, new: true }
+    );
+    res.json(s.data);
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
   }
 });
