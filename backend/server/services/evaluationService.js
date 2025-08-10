@@ -32,9 +32,24 @@ class EvaluationService {
       // Strategy 2: Remote Compiler Service  
       console.log('📍 Strategy 2: Remote Compiler Service');
       try {
-        const result = await this.evaluateWithRemoteCompiler(problemId, code, language, userId);
-        console.log('✅ Remote compiler successful!');
-        return result;
+        const remoteResult = await this.evaluateWithRemoteCompiler(problemId, code, language, userId);
+        console.log('✅ Remote compiler returned results');
+        // If not fully accepted, try JS fallback and choose the better outcome
+        if (remoteResult.overallStatus !== 'Accepted' || remoteResult.passedTests < remoteResult.totalTests) {
+          console.log('🟡 Remote not fully accepted, attempting JavaScript fallback to improve score...');
+          try {
+            const jsResult = await this.evaluateWithJSFallback(problemId, code, language, userId);
+            const remoteScore = remoteResult.passedTests || 0;
+            const jsScore = jsResult.passedTests || 0;
+            if (jsScore > remoteScore) {
+              console.log(`🟢 Using JavaScript fallback result (${jsScore}/${jsResult.totalTests}) over remote (${remoteScore}/${remoteResult.totalTests})`);
+              return jsResult;
+            }
+          } catch (e) {
+            console.log('⚠️ JS fallback after remote failed:', e.message);
+          }
+        }
+        return remoteResult;
       } catch (error) {
         console.log('⚠️ Remote compiler failed:', error.message);
         console.log('📍 Falling back to Strategy 3...');
