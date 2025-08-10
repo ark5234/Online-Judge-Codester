@@ -1,5 +1,7 @@
 # ✅ Production-Ready Components - Implementation Complete
 
+> Note (2025-08-10): Deprecated. This document is kept for historical context. Please refer to README.md for current usage and deployment details. This file may be removed in a future cleanup.
+
 ## 🎉 **SUCCESS SUMMARY**
 
 Your CodeEditor and CodeRunner components have been successfully upgraded to production-ready versions with enterprise-grade features and performance optimizations.

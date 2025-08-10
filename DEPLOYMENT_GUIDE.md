@@ -1,5 +1,7 @@
 # 🚀 Permanent Solution for Azure IP Changes
 
+> Note (2025-08-10): This guide is informational. For the canonical deployment steps, see README.md. Keep this as a reference only.
+
 ## Problem
 Azure Container Instances change IP addresses when restarted, causing your compiler service to become unreachable.
 
