@@ -1,1 +1,1 @@
-﻿http://
+﻿http://codester-compiler-6845.centralindia.azurecontainer.io:8000

@@ -138,6 +138,7 @@ class EvaluationService {
       
       // Try remote compiler first
       try {
+        console.log(`🔭 Remote compile request => lang=${langForRemote}`);
         const response = await axios.post(`${this.compilerUrl}/execute`, {
           code: executableCode,
           language: langForRemote,
@@ -149,6 +150,11 @@ class EvaluationService {
   const executionTime = Date.now() - startTime;
   const output = response.data.output || '';
   const success = this.compareOutputs(output.trim(), expectedOut);
+        if (!success) {
+          console.log(`🟠 Remote mismatch for ${langForRemote}: exp=${JSON.stringify(expectedOut)} act=${output.trim().slice(0,200)}`);
+        } else {
+          console.log(`🟢 Remote matched for ${langForRemote}`);
+        }
 
         return {
           success,
@@ -158,7 +164,9 @@ class EvaluationService {
         };
 
       } catch (remoteError) {
-  console.log('Remote compiler failed, falling back to local JavaScript execution...');
+        const status = remoteError?.response?.status;
+        const rerr = remoteError?.response?.data?.error || remoteError.message;
+        console.log(`Remote compiler failed (${status || 'no-status'}): ${String(rerr).slice(0,200)}. Falling back to local JavaScript execution...`);
   return await this.runLocalJavaScript(executableCode, expectedOut);
       }
 
