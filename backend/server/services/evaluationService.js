@@ -242,20 +242,49 @@ class EvaluationService {
 
   // Compare outputs
   compareOutputs(actual, expected) {
-    if (typeof expected === 'number') {
-      return Number(actual) === expected;
-    }
-    
-    if (Array.isArray(expected)) {
+    // Mirror the robust logic from DirectExecutionService
+    const aStr = (actual ?? '').toString().trim();
+    const eRaw = expected;
+
+    // If expected provided as array/object, deep-compare
+    if (eRaw && (Array.isArray(eRaw) || typeof eRaw === 'object')) {
       try {
-        const actualArray = JSON.parse(actual);
-        return JSON.stringify(actualArray) === JSON.stringify(expected);
-      } catch {
-        return actual.trim() === JSON.stringify(expected);
-      }
+        let aj;
+        try { aj = JSON.parse(aStr); }
+        catch { aj = JSON.parse(aStr.replace(/'/g, '"')); }
+        return JSON.stringify(aj) === JSON.stringify(eRaw);
+      } catch { return false; }
     }
-    
-    return actual.trim() === String(expected).trim();
+
+    const eStr = (eRaw ?? '').toString().trim();
+
+    // Numeric compare
+    if (!isNaN(Number(eStr)) && !isNaN(Number(aStr))) {
+      return Number(aStr) === Number(eStr);
+    }
+
+    // If either looks like JSON, try JSON deep compare (handles spacing like "[0, 1]" vs "[0,1]")
+    const looksJson = (s) => (s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'));
+    if (looksJson(eStr) || looksJson(aStr)) {
+      try {
+        const ej = looksJson(eStr) ? JSON.parse(eStr) : eStr;
+        let aj = looksJson(aStr) ? JSON.parse(aStr) : aStr;
+        if (!looksJson(aStr) && typeof aj === 'string') {
+          aj = JSON.parse(aj.replace(/'/g, '"'));
+        }
+        return JSON.stringify(aj) === JSON.stringify(ej);
+      } catch { /* continue */ }
+    }
+
+    // Fallback: compare numeric sequences ignoring separators
+    const extractNums = (s) => (s.match(/-?\d+(?:\.\d+)?/g) || []).map(v => Number(v));
+    const ea = extractNums(eStr);
+    const aa = extractNums(aStr);
+    if (ea.length && aa.length) {
+      return JSON.stringify(aa) === JSON.stringify(ea);
+    }
+
+    return aStr === eStr;
   }
 
   // Wrap code for execution
