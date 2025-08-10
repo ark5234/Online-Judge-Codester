@@ -122,31 +122,30 @@ class CodeExecutor:
     def execute_java(self, code, input_data=""):
         """Execute Java code"""
         try:
-            # Extract class name from code
+            # Extract public class name (fallback to Main)
             lines = code.split('\n')
             class_name = None
             for line in lines:
                 if 'public class' in line:
                     class_name = line.split('public class')[1].split()[0].strip()
                     break
-            
             if not class_name:
-                return {
-                    'success': False,
-                    'output': '',
-                    'error': 'No public class found',
-                    'execution_time': 0
-                }
-            
-            file_path = self.create_temp_file(code, 'java')
-            class_path = file_path.replace('.java', '')
-            
-            # Compile
+                class_name = 'Main'
+
+            # Write code to a Java file named after the public class
+            work_dir = '/app/temp'
+            os.makedirs(work_dir, exist_ok=True)
+            java_file = os.path.join(work_dir, f"{class_name}.java")
+            with open(java_file, 'w') as f:
+                f.write(code)
+
+            # Compile in working directory
             compile_process = subprocess.run(
-                ['javac', file_path],
+                ['javac', f'{class_name}.java'],
+                cwd=work_dir,
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=10
             )
             
             if compile_process.returncode != 0:
@@ -159,7 +158,7 @@ class CodeExecutor:
             
             # Execute
             process = subprocess.Popen(
-                ['java', '-cp', os.path.dirname(class_path), class_name],
+                ['java', '-cp', work_dir, class_name],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -186,8 +185,13 @@ class CodeExecutor:
             finally:
                 # Clean up
                 try:
-                    os.unlink(file_path)
-                    os.unlink(class_path + '.class')
+                    # Remove .java and produced .class files
+                    for fn in os.listdir(work_dir):
+                        if fn == f'{class_name}.java' or fn.endswith('.class'):
+                            try:
+                                os.unlink(os.path.join(work_dir, fn))
+                            except Exception:
+                                pass
                 except:
                     pass
                     
