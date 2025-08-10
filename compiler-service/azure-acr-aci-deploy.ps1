@@ -5,7 +5,8 @@ param(
   [string]$ImageName = "codester-compiler",
   [string]$ImageTag = "latest",
   [string]$ContainerName = "codester-compiler",
-  [string]$DnsLabel = "codester-compiler-$(Get-Random -Minimum 1000 -Maximum 9999)"
+  [string]$DnsLabel = "codester-compiler-$(Get-Random -Minimum 1000 -Maximum 9999)",
+  [int]$Port = 80
 )
 
 Write-Host "🚀 Deploying compiler-service Docker image to Azure (ACR + ACI)" -ForegroundColor Cyan
@@ -69,13 +70,13 @@ Write-Host "Deploying ACI $ContainerName with DNS label $DnsLabel..." -Foregroun
 # Delete existing container with same name (optional)
 az container delete --resource-group $ResourceGroup --name $ContainerName --yes 1>$null 2>$null
 
-$envs = @("PORT=8000")
+$envs = @("PORT=$Port")
 az container create `
   --resource-group $ResourceGroup `
   --name $ContainerName `
   --image $fullImage `
   --dns-name-label $DnsLabel `
-  --ports 8000 `
+  --ports $Port `
   --cpu 1 `
   --memory 2 `
   --os-type Linux `
@@ -112,8 +113,9 @@ if (-not $fqdn -and -not $pubip) {
   throw "Failed to obtain ACI endpoint."
 }
 
-if ($fqdn) { $serviceUrl = "http://${fqdn}:8000" }
-else { $serviceUrl = "http://${pubip}:8000" }
+if ($fqdn) { $serviceUrl = "http://${fqdn}" }
+else { $serviceUrl = "http://${pubip}" }
+if ($Port -ne 80) { $serviceUrl = "${serviceUrl}:$Port" }
 
 Write-Host "✅ Compiler Service URL: $serviceUrl" -ForegroundColor Green
 "$serviceUrl" | Out-File -FilePath (Join-Path $PSScriptRoot "..\azure-compiler-url.txt") -Encoding UTF8
@@ -121,7 +123,7 @@ Write-Host "✅ Compiler Service URL: $serviceUrl" -ForegroundColor Green
 # Health check
 Write-Host "Probing /health..." -ForegroundColor Yellow
 try {
-  $resp = Invoke-RestMethod -Uri "$serviceUrl/health" -TimeoutSec 15
+  $resp = Invoke-RestMethod -Uri "$serviceUrl/health" -TimeoutSec 20
   Write-Host "Health: $($resp.status)" -ForegroundColor Green
 } catch {
   Write-Host "Health check pending; try again in ~30s: $serviceUrl/health" -ForegroundColor Yellow

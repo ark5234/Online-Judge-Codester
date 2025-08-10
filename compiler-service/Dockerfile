@@ -35,7 +35,7 @@ RUN mkdir -p /app/code /app/output /app/temp
 # Set permissions
 RUN chmod +x /app/compiler.py
 
-# Expose port
+# Expose default port (can be overridden by PORT env)
 EXPOSE 8000
 
 # Run the compiler service
