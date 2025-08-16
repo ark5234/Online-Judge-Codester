@@ -23,17 +23,19 @@ export default function Discuss() {
     const fetchDiscussions = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_ENDPOINTS.DISCUSSIONS);
+  const response = await fetch(API_ENDPOINTS.DISCUSSIONS);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch discussions: ${response.status}`);
         }
         
-        const data = await response.json();
-        setDiscussions(data.discussions || []);
+  const data = await response.json();
+  setDiscussions(data.discussions || []);
       } catch (error) {
         console.error('Error fetching discussions:', error);
-        setError(error.message);
+  // If backend returns 503 (DB not connected) show empty list silently
+  setError(error.message);
+  setDiscussions([]);
       } finally {
         setLoading(false);
       }

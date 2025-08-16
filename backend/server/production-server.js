@@ -136,12 +136,13 @@ connectDB();
 
 // ===== HEALTH & STATUS ENDPOINTS =====
 
+
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Codester Production Backend is running!',
     version: '2.0.0',
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Mock Mode',
-    redis: redis.status === 'ready' ? 'Connected' : 'Mock Mode',
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Not Connected',
+    redis: redis.status === 'ready' ? 'Connected' : 'Not Connected',
     ai: aiService.isAvailable() ? 'Available' : 'Not Configured',
     compiler: 'Available'
   });
@@ -348,8 +349,8 @@ app.get('/api/health', async (req, res) => {
     status: 'OK', 
     message: 'Production Backend is running!',
     services: {
-      database: mongoStatus.status === 'Connected' ? 'Connected' : 'Mock Mode',
-      redis: redis.status === 'ready' ? 'Connected' : 'Mock Mode',
+  database: mongoStatus.status === 'Connected' ? 'Connected' : 'Not Connected',
+  redis: redis.status === 'ready' ? 'Connected' : 'Not Connected',
       ai: aiService.isAvailable() ? 'Available' : 'Not Configured',
       compiler: compilerHealth ? 'Connected' : 'Not Available'
     },
@@ -382,6 +383,34 @@ app.get('/api/stats', async (req, res) => {
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: 'Failed to get stats' });
+  }
+});
+
+// Public leaderboard (read-only) - ranks users by problemsSolved, accuracy, streak
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+    const { limit = 100 } = req.query;
+    const users = await User.find({ isActive: true })
+      .select('name email avatar role stats')
+      .sort({ 'stats.problemsSolved': -1, 'stats.accuracy': -1, 'stats.currentStreak': -1, createdAt: 1 })
+      .limit(Number(limit));
+    // Attach computed score for frontend convenience
+    const ranked = users.map(u => ({
+      id: u._id,
+      name: u.name,
+      email: u.email,
+      avatar: u.avatar,
+      role: u.role,
+      stats: u.stats,
+      score: (u.stats?.problemsSolved || 0) * 100 + (u.stats?.accuracy || 0) + (u.stats?.currentStreak || 0)
+    }));
+    res.json({ users: ranked });
+  } catch (e) {
+    console.error('Leaderboard error:', e.message);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });
 
@@ -746,45 +775,8 @@ app.get('/api/problems', optionalAuth, async (req, res) => {
   try {
     const { difficulty, category, search, page = 1, limit = 20 } = req.query;
     
-    // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      // Return mock data when MongoDB is not connected
-      const mockProblems = [
-        {
-          _id: 'mock-problem-1',
-          title: 'Hello World',
-          description: 'Print "Hello, World!" to the console.',
-          difficulty: 'Easy',
-          category: 'Basic',
-          tags: ['strings', 'output'],
-          isActive: true,
-          createdAt: new Date(),
-          submissions: 0,
-          acceptanceRate: 0
-        },
-        {
-          _id: 'mock-problem-2',
-          title: 'Sum of Two Numbers',
-          description: 'Write a function that returns the sum of two numbers.',
-          difficulty: 'Easy',
-          category: 'Math',
-          tags: ['math', 'functions'],
-          isActive: true,
-          createdAt: new Date(),
-          submissions: 0,
-          acceptanceRate: 0
-        }
-      ];
-      
-      return res.json({
-        problems: mockProblems,
-        pagination: {
-          page: page * 1,
-          limit: limit * 1,
-          total: mockProblems.length,
-          pages: 1
-        }
-      });
+      return res.status(503).json({ error: 'Database not connected' });
     }
     
     let query = { isActive: true };
@@ -825,30 +817,8 @@ app.get('/api/problems', optionalAuth, async (req, res) => {
 // Get problem by ID
 app.get('/api/problems/:id', optionalAuth, async (req, res) => {
   try {
-    // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      // Return mock data when MongoDB is not connected
-      const mockProblem = {
-        _id: req.params.id,
-        title: 'Hello World',
-        description: 'Print "Hello, World!" to the console.',
-        difficulty: 'Easy',
-        category: 'Basic',
-        tags: ['strings', 'output'],
-        isActive: true,
-        createdAt: new Date(),
-        submissions: 0,
-        acceptanceRate: 0,
-        testCases: req.user ? [
-          {
-            input: '',
-            output: 'Hello, World!',
-            isHidden: false
-          }
-        ] : []
-      };
-      
-      return res.json({ problem: mockProblem });
+      return res.status(503).json({ error: 'Database not connected' });
     }
     
     const problem = await Problem.findById(req.params.id);
@@ -902,33 +872,8 @@ app.post('/api/execute', async (req, res) => {
     try {
       const jsCompilerService = require('./services/jsCompilerService');
       
-      // For simple code execution without test cases, create a mock test case
-      const mockTestCases = [{
-        input: input ? input.split('\n') : [],
-        expectedOutput: 'executed'
-      }];
-      
-      const fallbackResult = await jsCompilerService.executeCode(language, code, mockTestCases);
-      
-      // If JS compiler fails but code looks simple, try direct execution for basic cases
-      if (!fallbackResult.success && (language === 'python' || language === 'javascript')) {
-        let simpleOutput = 'Code executed successfully';
-        
-        if (language === 'python' && code.includes('print(')) {
-          simpleOutput = 'Hello, World!\nCode executed';
-        } else if (language === 'javascript' && code.includes('console.log')) {
-          simpleOutput = 'Hello, World!\nCode executed';
-        }
-        
-        return res.json({
-          success: true,
-          output: simpleOutput,
-          error: null,
-          fallback: true,
-          message: 'Using simplified execution mode'
-        });
-      }
-      
+      // Fallback JS compiler for code execution (no mock test cases)
+      const fallbackResult = await jsCompilerService.executeCode(language, code, []);
       res.json({
         success: fallbackResult.success,
         output: fallbackResult.results?.[0]?.actualOutput || fallbackResult.error || 'Execution completed',
@@ -1204,59 +1149,8 @@ app.get('/api/discussions', async (req, res) => {
   try {
     const { page = 1, limit = 10, tag } = req.query;
     
-    // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      // Return mock data when MongoDB is not connected
-      const mockDiscussions = [
-        {
-          _id: 'mock-discussion-1',
-          title: 'Getting Started with Competitive Programming',
-          content: 'Hello everyone! I\'m new to competitive programming and would love some tips on how to get started. What resources do you recommend for beginners?',
-          author: {
-            _id: 'mock-user-1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            avatar: 'https://via.placeholder.com/40'
-          },
-          authorName: 'John Doe',
-          tags: ['beginner', 'competitive-programming'],
-          likes: [],
-          views: 15,
-          replies: [],
-          isActive: true,
-          createdAt: new Date(Date.now() - 86400000), // 1 day ago
-          updatedAt: new Date(Date.now() - 86400000)
-        },
-        {
-          _id: 'mock-discussion-2',
-          title: 'Best Data Structures for Interview Questions',
-          content: 'I have an upcoming technical interview and want to focus on the most important data structures. Which ones should I prioritize?',
-          author: {
-            _id: 'mock-user-2',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            avatar: 'https://via.placeholder.com/40'
-          },
-          authorName: 'Jane Smith',
-          tags: ['interview', 'data-structures'],
-          likes: [],
-          views: 8,
-          replies: [],
-          isActive: true,
-          createdAt: new Date(Date.now() - 172800000), // 2 days ago
-          updatedAt: new Date(Date.now() - 172800000)
-        }
-      ];
-      
-      return res.json({
-        discussions: mockDiscussions,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: mockDiscussions.length,
-          pages: 1
-        }
-      });
+      return res.status(503).json({ error: 'Database not connected' });
     }
     
     const skip = (page - 1) * limit;
@@ -1292,43 +1186,8 @@ app.get('/api/discussions', async (req, res) => {
 // Get single discussion
 app.get('/api/discussions/:id', async (req, res) => {
   try {
-    // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      // Return mock data when MongoDB is not connected
-      const mockDiscussion = {
-        _id: req.params.id,
-        title: 'Getting Started with Competitive Programming',
-        content: 'Hello everyone! I\'m new to competitive programming and would love some tips on how to get started. What resources do you recommend for beginners? I\'ve been practicing basic problems but feel like I need a more structured approach.',
-        author: {
-          _id: 'mock-user-1',
-          name: 'John Doe',
-          email: 'john@example.com',
-          avatar: 'https://via.placeholder.com/40'
-        },
-        authorName: 'John Doe',
-        tags: ['beginner', 'competitive-programming'],
-        likes: [],
-        views: 15,
-        replies: [
-          {
-            _id: 'mock-reply-1',
-            content: 'I recommend starting with HackerRank and LeetCode easy problems. Also check out the book "Competitive Programming Handbook".',
-            author: {
-              _id: 'mock-user-2',
-              name: 'Jane Smith',
-              email: 'jane@example.com',
-              avatar: 'https://via.placeholder.com/40'
-            },
-            createdAt: new Date(Date.now() - 43200000), // 12 hours ago
-            updatedAt: new Date(Date.now() - 43200000)
-          }
-        ],
-        isActive: true,
-        createdAt: new Date(Date.now() - 86400000), // 1 day ago
-        updatedAt: new Date(Date.now() - 86400000)
-      };
-      
-      return res.json({ discussion: mockDiscussion });
+      return res.status(503).json({ error: 'Database not connected' });
     }
     
     const discussion = await Discussion.findById(req.params.id)
@@ -1650,6 +1509,166 @@ app.post('/api/admin/seed-problems', authenticateToken, requireAdmin, async (req
   }
 });
 
+// Seed users on demand (guarded by seed key or admin auth)
+app.all('/api/admin/seed-users', async (req, res) => {
+  try {
+    const { seedKey: bodyKey } = req.body || {};
+    const { seedKey: queryKey } = req.query || {};
+    const seedKey = bodyKey || queryKey;
+
+    let isAdmin = false;
+    const validKey = seedKey === (process.env.SEED_USERS_KEY || 'SEED_USERS_2025');
+
+    if (!validKey) {
+      // Try to authorize via admin JWT token (without writing response on failure)
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          const user = await User.findById(decoded.userId).select('role email');
+          if (user && user.role === 'admin') {
+            isAdmin = true;
+          }
+        } catch (_) {
+          // invalid token -> ignore
+        }
+      }
+    }
+
+    if (!validKey && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Invalid seed key or admin token required' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const seeds = [DEFAULT_ADMIN_SEED, DEFAULT_ADMIN2_SEED, DEFAULT_USER_SEED];
+    const results = [];
+    for (const seed of seeds) {
+      const existing = await User.findOne({ email: seed.email.toLowerCase() });
+      if (!existing) {
+        const u = new User(seed);
+        await u.save();
+        results.push({ email: seed.email, action: 'created', role: seed.role });
+      } else {
+        // Ensure proper role and reset password for deterministic login
+        const before = { role: existing.role };
+        existing.role = seed.role;
+        existing.isActive = true;
+        // Always reset seed account password unless explicitly disabled
+        const shouldReset = (req.query.reset ?? 'true') !== 'false';
+        if (shouldReset) {
+          existing.password = seed.password; // pre-save hook will hash
+        }
+        await existing.save();
+        results.push({ email: seed.email, action: 'updated', role: existing.role, passwordReset: shouldReset });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+  console.error('Seed users error:', error);
+  res.status(500).json({ error: 'Failed to seed users', message: error.message, stack: process.env.NODE_ENV==='development'?error.stack:undefined });
+  }
+});
+
+// List problems (admin)
+app.get('/api/admin/problems', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search } = req.query;
+    const query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+    const problems = await Problem.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+    const total = await Problem.countDocuments(query);
+    res.json({ problems, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (error) {
+    console.error('Error listing problems (admin):', error);
+    res.status(500).json({ error: 'Failed to list problems' });
+  }
+});
+
+// Update problem (admin)
+app.put('/api/admin/problems/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const updated = await Problem.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Problem not found' });
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating problem:', error);
+    res.status(500).json({ error: 'Failed to update problem' });
+  }
+});
+
+// Delete problem (admin)
+app.delete('/api/admin/problems/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const del = await Problem.findByIdAndDelete(req.params.id);
+    if (!del) return res.status(404).json({ error: 'Problem not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting problem:', error);
+    res.status(500).json({ error: 'Failed to delete problem' });
+  }
+});
+
+// List submissions (admin)
+app.get('/api/admin/submissions', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId, problemId, status, page = 1, limit = 50 } = req.query;
+    const query = {};
+    if (userId) query.user = userId;
+    if (problemId) query.problem = problemId;
+    if (status) query.status = status;
+    const submissions = await Submission.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit))
+      .populate('user', 'name email role')
+      .populate('problem', 'title');
+    const total = await Submission.countDocuments(query);
+    res.json({ submissions, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (error) {
+    console.error('Error listing submissions (admin):', error);
+    res.status(500).json({ error: 'Failed to list submissions' });
+  }
+});
+
+// Settings (admin)
+app.get('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const s = await Settings.findOne({ key: 'global' });
+    res.json(s?.data || {});
+  } catch (error) {
+    console.error('Error getting settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+app.put('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const s = await Settings.findOneAndUpdate(
+      { key: 'global' },
+      { $set: { data: req.body || {} } },
+      { upsert: true, new: true }
+    );
+    res.json(s.data);
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
 // ===== ERROR HANDLING =====
 
 app.use((err, req, res, next) => {
@@ -1801,152 +1820,4 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Production Server running on port ${PORT}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
-});
-
-// Seed users on demand (guarded by seed key or admin auth)
-app.all('/api/admin/seed-users', async (req, res) => {
-  try {
-    const { seedKey: bodyKey } = req.body || {};
-    const { seedKey: queryKey } = req.query || {};
-    const seedKey = bodyKey || queryKey;
-
-    let isAdmin = false;
-    const validKey = seedKey === (process.env.SEED_USERS_KEY || 'SEED_USERS_2025');
-
-    if (!validKey) {
-      // Try to authorize via admin JWT token
-      try {
-        await authenticateToken(req, res, () => {});
-        await requireAdmin(req, res, () => {});
-        isAdmin = true;
-      } catch (_) {
-        // ignore
-      }
-    }
-
-    if (!validKey && !isAdmin) {
-      return res.status(403).json({ error: 'Forbidden', message: 'Invalid seed key or admin token required' });
-    }
-
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: 'Database not connected' });
-    }
-
-    const seeds = [DEFAULT_ADMIN_SEED, DEFAULT_ADMIN2_SEED, DEFAULT_USER_SEED];
-    const results = [];
-    for (const seed of seeds) {
-      const existing = await User.findOne({ email: seed.email.toLowerCase() });
-      if (!existing) {
-        const u = new User(seed);
-        await u.save();
-        results.push({ email: seed.email, action: 'created', role: seed.role });
-      } else if (seed.role === 'admin' && existing.role !== 'admin') {
-        existing.role = 'admin';
-        await existing.save();
-        results.push({ email: seed.email, action: 'promoted', role: 'admin' });
-      } else {
-        results.push({ email: seed.email, action: 'skipped', role: existing.role });
-      }
-    }
-
-    res.json({ success: true, results });
-  } catch (error) {
-    console.error('Seed users error:', error);
-    res.status(500).json({ error: 'Failed to seed users' });
-  }
-});
-
-// List problems (admin)
-app.get('/api/admin/problems', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { page = 1, limit = 50, search } = req.query;
-    const query = {};
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
-      ];
-    }
-    const problems = await Problem.find(query)
-      .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
-    const total = await Problem.countDocuments(query);
-    res.json({ problems, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
-  } catch (error) {
-    console.error('Error listing problems (admin):', error);
-    res.status(500).json({ error: 'Failed to list problems' });
-  }
-});
-
-// Update problem (admin)
-app.put('/api/admin/problems/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const updated = await Problem.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Problem not found' });
-    res.json(updated);
-  } catch (error) {
-    console.error('Error updating problem:', error);
-    res.status(500).json({ error: 'Failed to update problem' });
-  }
-});
-
-// Delete problem (admin)
-app.delete('/api/admin/problems/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const del = await Problem.findByIdAndDelete(req.params.id);
-    if (!del) return res.status(404).json({ error: 'Problem not found' });
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting problem:', error);
-    res.status(500).json({ error: 'Failed to delete problem' });
-  }
-});
-
-// List submissions (admin)
-app.get('/api/admin/submissions', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { userId, problemId, status, page = 1, limit = 50 } = req.query;
-    const query = {};
-    if (userId) query.user = userId;
-    if (problemId) query.problem = problemId;
-    if (status) query.status = status;
-    const submissions = await Submission.find(query)
-      .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit))
-      .populate('user', 'name email role')
-      .populate('problem', 'title');
-    const total = await Submission.countDocuments(query);
-    res.json({ submissions, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
-  } catch (error) {
-    console.error('Error listing submissions (admin):', error);
-    res.status(500).json({ error: 'Failed to list submissions' });
-  }
-});
-
-// Settings (admin)
-app.get('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const s = await Settings.findOne({ key: 'global' });
-    res.json(s?.data || {});
-  } catch (error) {
-    console.error('Error getting settings:', error);
-    res.status(500).json({ error: 'Failed to fetch settings' });
-  }
-});
-
-app.put('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const s = await Settings.findOneAndUpdate(
-      { key: 'global' },
-      { $set: { data: req.body || {} } },
-      { upsert: true, new: true }
-    );
-    res.json(s.data);
-  } catch (error) {
-    console.error('Error updating settings:', error);
-    res.status(500).json({ error: 'Failed to update settings' });
-  }
 });

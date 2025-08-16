@@ -14,9 +14,19 @@ export default function Ranks() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        // Try dedicated leaderboard endpoint first
+        const lb = await adminService.getLeaderboard().catch(() => null);
+        if (lb && Array.isArray(lb.users)) {
+          setUsers(lb.users);
+          return;
+        }
+        // Fallback: fetch all users (admin protected) then compute score locally
         const data = await adminService.getUsers();
-        // Sort users by score/points if available
-        const sorted = (data.users || []).sort((a, b) => (b.score || b.points || 0) - (a.score || a.points || 0));
+        const enriched = (data.users || []).map(u => ({
+          ...u,
+          score: (u.stats?.problemsSolved || 0) * 100 + (u.stats?.accuracy || 0) + (u.stats?.currentStreak || 0)
+        }));
+        const sorted = enriched.sort((a, b) => (b.score || 0) - (a.score || 0));
         setUsers(sorted);
       } catch (err) {
         setUsers([]);

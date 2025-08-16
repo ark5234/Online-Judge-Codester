@@ -17,16 +17,20 @@ class AdminService {
     }
     
     // If no JWT token, try to get Appwrite user data for fallback headers
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.$id) {
-      return {
-        'Content-Type': 'application/json',
-        'x-appwrite-token': user.$id,
-        'x-user-email': user.email,
-        'x-user-name': user.name,
-        'x-user-avatar': user.avatar || '',
-      };
-    }
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const appwriteJwt = localStorage.getItem('APPWRITE_JWT');
+      if (user.$id) {
+        return {
+          'Content-Type': 'application/json',
+          // Use real Appwrite JWT if present; backend flexibleAuth only needs identity
+          'x-appwrite-token': appwriteJwt || user.$id,
+          'x-user-email': user.email,
+          'x-user-name': user.name,
+          'x-user-avatar': user.avatar || '',
+        };
+      }
+    } catch {}
     
     // No authentication available
     return {
@@ -64,11 +68,32 @@ class AdminService {
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
-
-      return await response.json();
+      const data = await response.json();
+      // Backend currently returns raw array; normalize to { users: [...] }
+      if (Array.isArray(data)) {
+        return { users: data };
+      }
+      if (!data.users && data.length === undefined) {
+        data.users = [];
+      }
+      return data;
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
+    }
+  }
+
+  // Leaderboard (public-ish) endpoint wrapper
+  async getLeaderboard(limit = 100) {
+    try {
+      const response = await fetch(`${this.baseURL}/leaderboard?limit=${limit}`, {
+        method: 'GET'
+      });
+      if (!response.ok) throw new Error('Failed to fetch leaderboard');
+      return await response.json();
+    } catch (e) {
+      console.error('Error fetching leaderboard:', e);
+      throw e;
     }
   }
 

@@ -17,7 +17,7 @@ export default function Status() {
       try {
         setLoading(true);
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api'}/submissions/user`, {
+  const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api'}/submissions`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -26,7 +26,16 @@ export default function Status() {
         
         if (response.ok) {
           const data = await response.json();
-          setSubmissions(data.submissions || []);
+          // Normalize submission structure (API returns submissions array)
+          const subs = data.submissions || [];
+          const normalized = subs.map(s => ({
+            _id: s._id || s.id,
+            problemTitle: s.problemTitle || s.problem?.title || s.problem,
+            verdict: s.status || s.verdict || s.result?.status || 'Unknown',
+            executionTime: s.executionTime || s.time || null,
+            createdAt: s.createdAt || s.date || Date.now()
+          }));
+          setSubmissions(normalized);
         } else {
           setSubmissions([]);
         }

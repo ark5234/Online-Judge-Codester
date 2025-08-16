@@ -42,13 +42,15 @@ export const AuthProvider = ({ children }) => {
         // ignore, fallback to Appwrite-only user
       }
       setUser(mergedUser);
+      // persist for services that need fallback headers (e.g., adminService when only Appwrite auth present)
+      try { localStorage.setItem('user', JSON.stringify(mergedUser)); } catch {}
     } catch (error) {
-      // No Appwrite session (likely third-party cookies blocked). Try backend token fallback
+      const isAuthError = (error?.code === 401) || /401|Unauthorized|scope|session/i.test(error?.message || '');
+      // Fallback to backend token if available
       try {
         const me = await authService.getCurrentUser();
         const beUser = me.user || me;
         setUser({
-          // Normalize to Appwrite-like shape for the rest of the app
           $id: beUser._id || 'local',
           name: beUser.name || beUser.username || beUser.email,
           email: beUser.email,
@@ -56,9 +58,20 @@ export const AuthProvider = ({ children }) => {
           isAdmin: beUser.isAdmin === true || beUser.role === 'admin',
           provider: 'backend-token',
         });
+        try { localStorage.setItem('user', JSON.stringify({
+          $id: beUser._id || 'local',
+          name: beUser.name || beUser.username || beUser.email,
+          email: beUser.email,
+          role: beUser.role,
+          isAdmin: beUser.isAdmin === true || beUser.role === 'admin',
+          provider: 'backend-token'
+        })); } catch {}
       } catch (e) {
-        console.log('No active session');
+        if (!isAuthError) {
+          console.warn('Fetch user fallback failed:', e.message);
+        }
         setUser(null);
+        try { localStorage.removeItem('user'); } catch {}
       }
     } finally {
       setLoading(false);
@@ -126,11 +139,20 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await account.deleteSession('current');
+      try {
+        await account.deleteSession('current');
+      } catch (err) {
+        // Ignore 401/guest scope errors - session already gone
+        if (!/401|scope|session/i.test(err?.message || '')) {
+          console.warn('Non-critical Appwrite logout issue:', err.message);
+        }
+      }
       setUser(null);
       localStorage.removeItem('user');
-  setJwt(null);
-  clearLocalToken();
+      localStorage.removeItem('authToken');
+      setJwt(null);
+      clearLocalToken();
+      setTimeout(() => { if (typeof window !== 'undefined') window.location.href = '/login'; }, 50);
     } catch (error) {
       console.error('Logout error:', error);
     }
