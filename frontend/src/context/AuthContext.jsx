@@ -24,6 +24,46 @@ export const AuthProvider = ({ children }) => {
   restoreJwtFromStorage();
       const userData = await account.get();
       let mergedUser = userData;
+      // If we do not yet have a backend JWT, attempt token exchange (Google OAuth / Appwrite session case)
+      let backendToken = null;
+      try { backendToken = localStorage.getItem('authToken'); } catch {}
+      if (!backendToken) {
+        try {
+          // Create (or refresh) Appwrite JWT then exchange with backend
+          const { jwt: appwriteJwt } = await account.createJWT();
+          setJwt(appwriteJwt); // persist for later API calls
+          const exchangeRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api'}/auth/exchange-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appwriteToken: appwriteJwt,
+              userEmail: userData.email,
+              userName: userData.name,
+              userAvatar: userData.prefs?.avatar || userData.avatar || ''
+            })
+          });
+          if (exchangeRes.ok) {
+            const exData = await exchangeRes.json();
+            if (exData?.token) {
+              try { localStorage.setItem('authToken', exData.token); } catch {}
+              backendToken = exData.token;
+              if (exData.user) {
+                mergedUser = {
+                  ...userData,
+                  role: exData.user.role,
+                  isAdmin: exData.user.isAdmin === true || exData.user.role === 'admin',
+                };
+              }
+            }
+          } else {
+            // Non-fatal; continue with Appwrite-only identity
+            // console.warn('Backend token exchange failed with status', exchangeRes.status);
+          }
+        } catch (exErr) {
+          // Silent fail; will rely on backend enrichment attempt below if authToken ends up set later
+          // console.warn('Token exchange error:', exErr?.message);
+        }
+      }
       // Try to enrich with backend role/isAdmin using existing JWT (if any)
       try {
         const me = await authService.getCurrentUser();
@@ -86,6 +126,24 @@ export const AuthProvider = ({ children }) => {
         await account.createEmailPasswordSession(email, password);
         const { jwt } = await account.createJWT();
         setJwt(jwt);
+        // Immediately perform backend token exchange to obtain role/isAdmin
+        try {
+          const exchangeRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://online-judge-codester.onrender.com/api'}/auth/exchange-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appwriteToken: jwt,
+              userEmail: email,
+              userName: email.split('@')[0]
+            })
+          });
+          if (exchangeRes.ok) {
+            const ex = await exchangeRes.json();
+            if (ex?.token) {
+              try { localStorage.setItem('authToken', ex.token); } catch {}
+            }
+          }
+        } catch {}
         await fetchUser();
         return { success: true };
       } catch (appwriteErr) {
