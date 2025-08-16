@@ -71,7 +71,7 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-// Guest authentication (for non-authenticated users)
+// Guest authentication (for non-authenticated users) with JWT detection
 const guestAuth = async (req, res, next) => {
   try {
     const isGuest = req.headers['x-guest-submission'] === 'true';
@@ -93,35 +93,39 @@ const guestAuth = async (req, res, next) => {
         }
       };
     } else {
-      // Try to authenticate as regular user
+      // Try JWT first
       const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          const user = await User.findById(decoded.userId);
+          if (user && user.isActive) {
+            req.user = user;
+            return next();
+          }
+        } catch (_) { /* fallthrough to Appwrite style */ }
+      }
+      // Fall back to Appwrite headers style
       const appwriteToken = req.headers['x-appwrite-token'];
-      
-      if (authHeader || appwriteToken) {
-        // Handle authenticated user
+      if (appwriteToken) {
         const userData = {
           email: req.headers['x-user-email'] || 'user@example.com',
           name: req.headers['x-user-name'] || 'User',
           avatar: req.headers['x-user-avatar'] || ''
         };
-
-        // Find or create user
         let user = await User.findOne({ email: userData.email });
-        
         if (!user) {
-          // Create user with a default password for OAuth users
           user = new User({
             email: userData.email,
             name: userData.name,
             avatar: userData.avatar,
-            password: 'oauth-user-' + Date.now() // Temporary password for OAuth users
+            password: 'oauth-user-' + Date.now()
           });
           await user.save();
         }
-
         req.user = user;
       } else {
-        // No authentication provided, create a default guest user
         req.user = {
           _id: 'guest-' + Date.now(),
           email: 'guest@codester.com',
@@ -129,12 +133,7 @@ const guestAuth = async (req, res, next) => {
           avatar: '',
           role: 'guest',
           isActive: true,
-          stats: {
-            problemsSolved: 0,
-            currentStreak: 0,
-            totalSubmissions: 0,
-            accuracy: 0
-          }
+          stats: { problemsSolved: 0, currentStreak: 0, totalSubmissions: 0, accuracy: 0 }
         };
       }
     }

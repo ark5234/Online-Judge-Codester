@@ -149,16 +149,16 @@ export const apiService = {
   // Submit solution
   async submitSolution(problemId, code, language) {
     try {
+      // Include auth token if available so submission is attributed & persisted
+      let authHeaders = { 'Content-Type': 'application/json' };
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) authHeaders['Authorization'] = `Bearer ${token}`;
+      } catch {}
       const response = await fetch(API_ENDPOINTS.SUBMISSIONS, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          problemId,
-          code,
-          language,
-        }),
+        headers: authHeaders,
+        body: JSON.stringify({ problemId, code, language }),
       });
       
       return await response.json();
