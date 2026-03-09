@@ -1,13 +1,11 @@
 const axios = require('axios');
 const Problem = require('../models/Problem');
-const DirectExecutionService = require('./DirectExecutionService');
 const JavaScriptCompilerService = require('./jsCompilerService');
 
 class EvaluationService {
   constructor() {
   this.compilerUrl = process.env.COMPILER_SERVICE_URL || 'http://localhost:8000';
   this.compilerUrlFallback = process.env.COMPILER_SERVICE_URL_FALLBACK || '';
-    this.directExecutor = new DirectExecutionService();
     this.jsCompiler = new JavaScriptCompilerService();
   }
 
@@ -16,19 +14,6 @@ class EvaluationService {
     console.log(`\n🎯 Evaluation Strategy for ${language}:`);
     
     try {
-      // Strategy 1: Direct Local Execution (like the working repo)
-      if (this.directExecutor.supportedLanguages.includes(language.toLowerCase())) {
-        console.log('📍 Strategy 1: Direct Local Execution (Primary)');
-        try {
-          const result = await this.directExecutor.evaluateSubmission(problemId, code, language, userId);
-          console.log('✅ Direct execution successful!');
-          return result;
-        } catch (error) {
-          console.log('⚠️ Direct execution failed:', error.message);
-          console.log('📍 Falling back to Strategy 2...');
-        }
-      }
-
       // Strategy 2: Remote Compiler Service  
       console.log('📍 Strategy 2: Remote Compiler Service');
       try {
