@@ -1,73 +1,83 @@
-﻿# Online Judge - Codester
+# OJ Codester
 
-A modern, full-stack online coding platform designed for competitive programming, algorithm practice, and coding interviews. Built with cutting-edge technologies and deployed on cloud infrastructure.
+A full-stack competitive programming platform for algorithm practice, coding contests, and skill development.
+
+**Live**  [codester.vercel.app](https://codester.vercel.app)
+
+---
+
+## Overview
+
+OJ Codester is a web-based online judge that supports multi-language code execution, contest hosting, AI-powered hints, and a community discussion board. It is designed with a clean dark-first UI and built for deployment on modern cloud infrastructure.
+
+---
 
 ## Features
 
-- **Multi-Language Code Execution**: Support for Python, JavaScript, Java, C++, and C
-- **Comprehensive Problem Library**: Curated algorithmic challenges across multiple difficulty levels
-- **AI-Powered Code Assistance**: Intelligent hints and code reviews powered by Google Gemini AI
-- **Complete User Management**: Secure authentication, user profiles, and progress tracking
-- **Advanced Analytics**: Detailed submission statistics and performance metrics
-- **Community Features**: Discussion forums for problem-solving and knowledge sharing
-- **Modern Responsive UI**: Beautiful interface built with React 19 and Tailwind CSS
-- **Real-time Code Editor**: Monaco Editor with syntax highlighting and IntelliSense
-- **Secure Architecture**: JWT-based authentication with comprehensive middleware protection
+| Area | Details |
+|---|---|
+| **Code Execution** | Python, JavaScript, Java, C++, C via a sandboxed compiler service |
+| **Problem Library** | Curated algorithmic challenges across Easy / Medium / Hard difficulty |
+| **AI Assistance** | Code hints and reviews via Google Gemini |
+| **Contests** | Timed competitive rounds with leaderboard rankings |
+| **Discussions** | Community forums per problem and general topics |
+| **User Profiles** | Progress tracking, submission history, statistics |
+| **Admin Panel** | Problem management, user management, platform settings |
+| **Code Runner** | Standalone IDE with custom test cases |
+
+---
 
 ## Tech Stack
 
-### Frontend
+**Frontend** � React 19, Vite, Tailwind CSS v4, Monaco Editor, Framer Motion, React Router  
+**Backend** � Node.js, Express, MongoDB Atlas, Redis, JWT, Google Gemini AI  
+**Compiler** � Isolated Python service containerized via Docker  
+**Infra** � Vercel (frontend), Render (backend), Azure Container Instances (compiler)
 
-- **React 19** - Latest React with concurrent features
-- **Vite** - Next-generation frontend tooling
-- **Tailwind CSS** - Utility-first CSS framework
-- **Monaco Editor** - VS Code's editor for the web
-- **React Router Dom** - Declarative routing
-- **Framer Motion** - Production-ready motion library
-- **Lucide React** - Beautiful & consistent icons
+---
 
-### Backend
+## Project Structure
 
-- **Node.js & Express** - Server-side JavaScript runtime and framework
-- **MongoDB Atlas** - Cloud-hosted NoSQL database
-- **Redis Cloud** - In-memory caching and session storage
-- **JWT** - Stateless authentication tokens
-- **Google Gemini AI** - Advanced AI code assistance
-- **Appwrite** - Backend-as-a-Service for additional features
+```
+Online-Judge-Codester/
+ frontend/               # React + Vite app
+    src/
+       components/     # Navbar, Footer, CodeEditor
+       pages/          # All route-level pages
+       context/        # Auth, Theme providers
+       services/       # API clients
+       utils/
+    public/
+ backend/
+    server/             # Express API
+        models/         # Mongoose schemas
+        middleware/     # Auth middleware
+        services/       # Business logic, AI, evaluation
+ compiler-service/       # Sandboxed code execution service
+    compiler.py
+    Dockerfile
+ docs/                   # Deployment and implementation guides
+```
 
-### Infrastructure & Deployment
-
-- **Frontend**: Vercel (Global CDN, automatic deployments)
-- **Backend**: Render (Auto-scaling, continuous deployment)
-- **Compiler Service**: Azure Container Instances (Isolated code execution)
-- **Database**: MongoDB Atlas (Multi-region clusters)
-- **Cache**: Redis Cloud (High-performance caching)
-
-## Live Demo
-
-- **Frontend**: <https://codester.vercel.app>
-- **Backend API**: <https://online-judge-codester.onrender.com>
-- **Compiler Service**: <http://4.187.155.173:80>
-
-## Prerequisites
-
-- **Node.js 18+** - JavaScript runtime
-- **MongoDB Atlas Account** - Cloud database service
-- **Redis Cloud Account** - Caching service
-- **Azure Account** - For compiler service hosting
-- **Google Gemini API Key** - For AI assistance (optional)
-- **Git** - Version control
+---
 
 ## Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+
+- Node.js 18+
+- MongoDB Atlas account
+- Redis Cloud account (optional � falls back to in-memory)
+- Google Gemini API key (optional � AI features disabled without it)
+
+### 1. Clone
 
 ```bash
 git clone https://github.com/ark5234/Online-Judge-Codester.git
 cd Online-Judge-Codester
 ```
 
-### 2. Frontend Setup
+### 2. Frontend
 
 ```bash
 cd frontend
@@ -75,158 +85,72 @@ npm install
 npm run dev
 ```
 
-### 3. Backend Setup
+### 3. Backend
 
 ```bash
 cd backend/server
 npm install
+cp .env.example .env   # fill in your values
 npm start
 ```
 
-### 4. Environment Variables
+### Environment Variables
 
-#### Frontend (.env.local)
-
+**Frontend** (`frontend/.env.local`):
 ```env
 VITE_API_URL=https://online-judge-codester.onrender.com/api
-VITE_COMPILER_URL=http://4.187.155.173:80
+VITE_COMPILER_URL=http://your-compiler-service-url
 ```
 
-#### Backend (.env)
-
+**Backend** (`backend/server/.env`):
 ```env
 NODE_ENV=production
 PORT=10000
 MONGO_URI=your_mongodb_atlas_uri
 REDIS_URL=your_redis_cloud_url
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=your_jwt_secret_min_32_chars
 GEMINI_API_KEY=your_gemini_api_key
-COMPILER_SERVICE_URL=http://4.187.155.173:80
+COMPILER_SERVICE_URL=http://your-compiler-service-url
 CORS_ORIGIN=https://codester.vercel.app
 ```
 
-##  Important Notes & Warnings
-
-- Third‑party cookies: If your browser blocks third‑party cookies, Appwrite cookie sessions may fail. The app includes a cookie‑less fallback for manual email/password login via backend JWT. Google OAuth may still rely on cookies unless configured with a token exchange.
-- Compiler timeouts: Long‑running or highly interactive programs may time out. Prefer printing final answers. Memory/CPU are limited in the remote sandbox.
-- Hidden problems in v1.0: Some problems may be intentionally hidden from the Problems list for the initial release (e.g., Word Ladder). Existing backend/data routes still work; UI only hides them.
-- CORS/domains: Ensure frontend and backend origins are added to CORS allowed origins and that environment variables match your deployed URLs.
-- Security: Do not commit secrets. Use environment variables or secret managers (e.g., Azure Key Vault) for tokens and keys.
- - AI hints: The AI assistant isn’t perfect; treat hints as guidance, not final answers. Verify logic with test cases.
- - Google sign‑in: If you can’t sign in with Google, check your browser’s “Secure/Third‑party cookies” setting. Use email/password login as a fallback.
-
-##  Suggestions for Users
-
-- Prefer using the Code Runner’s test cases panel to iterate on logic with custom inputs and expected outputs.
-- For Java solutions, ensure your entry class is `Main` if running raw code in the Code Runner.
-- For linked list problems, follow the input format shown in each problem description to avoid parsing mismatches.
-- Save your work frequently; the editor auto‑saves, but manual save is available in the UI.
-
-## Supported Languages
-
-- **Python** (3.10+)
-- **JavaScript** (Node.js)
-- **Java** (OpenJDK 11)
-- **C++** (GCC)
-- **C** (GCC)
-
-## Problem Categories
-
-- **Arrays & Strings**
-- **Linked Lists**
-- **Trees & Graphs**
-- **Dynamic Programming**
-- **Greedy Algorithms**
-- **Sorting & Searching**
-- **Mathematics**
-- **Bit Manipulation**
+---
 
 ## Deployment
 
-### Frontend (Vercel)
+See [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md) for full deployment instructions for Render, Vercel, and Azure.
 
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
+**Quick reference:**
+- **Frontend**  Connect repo to Vercel, set env vars, push to `main`
+- **Backend**  Connect repo to Render, set env vars, push to `main`
+- **Compiler**  Build Docker image, deploy to any container host (Azure, Render, Fly.io)
 
-### Backend (Render)
+---
 
-1. Connect your GitHub repository to Render
-2. Set environment variables in Render dashboard
-3. Deploy automatically on push to main branch
+## Supported Languages
 
-### Compiler Service (Azure Container Instances)
+Python 3.10+  JavaScript (Node.js)  Java (OpenJDK 11)  C++ (GCC)  C (GCC)
 
-1. Create Azure resource group in your preferred region
-2. Deploy containerized compiler service using Azure CLI
-3. Configure public IP and port access
-4. Update backend environment variables with new service URL
+---
 
-## Project Structure
+## Notes
 
-```plaintext
-Online-Judge-Codester/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Application pages/routes
-│   │   ├── services/       # API service layers
-│   │   ├── context/        # React context providers
-│   │   └── utils/          # Utility functions
-│   ├── public/             # Static assets
-│   └── package.json        # Frontend dependencies
-├── backend/
-│   └── server/             # Express.js backend
-│       ├── models/         # MongoDB data models
-│       ├── middleware/     # Express middleware
-│       ├── services/       # Business logic services
-│       └── package.json    # Backend dependencies
-├── compiler-service/       # Isolated code execution service
-│   ├── compiler.py         # Python-based code executor
-│   └── Dockerfile          # Container configuration
-└── README.md              # Project documentation
-```
+- **Cookie policy** � If third-party cookies are blocked, Google OAuth may fail. Use email/password login as a fallback.
+- **Compiler timeouts** � Submissions have a max execution time. Avoid interactive/infinite-loop programs.
+- **Secrets** � Never commit `.env` files. Use environment variable managers in production.
+- **AI hints** � Treat AI suggestions as guidance, not ground truth. Always verify with test cases.
+
+---
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Monaco Editor](https://microsoft.github.io/monaco-editor/) - VS Code's editor for the web
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [Google Gemini AI](https://ai.google.dev/) - Advanced AI assistance
-- [MongoDB Atlas](https://www.mongodb.com/atlas) - Cloud database platform
-- [Render](https://render.com/) - Backend hosting platform
-- [Vercel](https://vercel.com/) - Frontend hosting and deployment
-- [Azure](https://azure.microsoft.com/) - Compiler service hosting
-
-## Support
-
-If you have any questions or need help, please:
-
--  Open an issue on [GitHub Issues](https://github.com/ark5234/Online-Judge-Codester/issues)
--  Contact the development team
--  Check the documentation above
-
-## Roadmap
-
-- [ ] Contest management system
-- [ ] Real-time leaderboards
-- [ ] Advanced problem filtering
-- [ ] Code plagiarism detection
-- [ ] Mobile application
-- [ ] Integration with external judges
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit: `git commit -m 'feat: describe your change'`
+4. Push and open a Pull Request
 
 ---
 
-### Made with ❤️ by the Codester Team
+## License
 
+MIT � see [LICENSE](LICENSE).
